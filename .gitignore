@@ -1,0 +1,39 @@
+# Secrets
+.env
+.env.*
+!.env.sample
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.svelte-kit/
+build/
+
+# Dataset images and annotations stay out of Git; only manifests are committed
+data/*
+!data/manifests/
+
+# Model weights and training outputs
+*.pt
+*.pth
+*.onnx
+*.pdparams
+weights/
+experiments/**/checkpoints/
+experiments/**/runs/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

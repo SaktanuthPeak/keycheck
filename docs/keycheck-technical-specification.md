@@ -3,8 +3,10 @@
 **ระบบตรวจสอบคีย์แคปผิดตำแหน่งจากภาพถ่ายด้วย AI**  
 **English title:** Keycap Placement Inspection Using Object Detection and Optical Character Recognition  
 **ประเภท:** AI/ML Mini Project + Mobile-first Web Application  
-**เวอร์ชันเอกสาร:** 1.0 — 30 กันยายน 2026  
+**เวอร์ชันเอกสาร:** 1.1 — 1 ตุลาคม 2026  
 **สถานะ:** ข้อเสนอสำหรับพัฒนา ยังไม่ใช่ระบบที่ผ่านการฝึกหรือทดสอบจริง
+
+> **การเปลี่ยนแปลงใน v1.1 (รออาจารย์เห็นชอบ):** ขยายขอบเขตจากคีย์บอร์ดรุ่นเดียวเป็น **Tier 2** — คีย์บอร์ด QWERTY แบบแถวเยื้อง (ANSI/ISO) หลายรุ่น ที่มีตัวอักษรอังกฤษพิมพ์บนหน้าปุ่ม รวมถึงปุ่มที่มีอักษรไทยร่วม โดยระบบ **อ่านและตรวจเฉพาะตัวอักษรอังกฤษ A–Z** และไม่สนใจอักษรไทย เปลี่ยน Layout อ้างอิงเป็น Generic letter-block ในหน่วยปุ่ม (1u) และเพิ่ม Leave-keyboard-out test ส่วนที่แก้: §1, §2, §3, §4.1, §5, §6.2, §6.3, §7.2, §7.4, §7.8, §9.1, §10.4, §11.3, §11.5, §12.1, §16.1, §16.4, §17.1, §17.2, §18, §19, §20
 
 > ค่าจำนวนภาพ การตั้งค่าฝึก และขีดจำกัดระบบในเอกสารนี้เป็นข้อเสนอเริ่มต้น ต้องปรับหลังทำ Pilot ไม่ใช่ผลทดลองหรือการรับประกันความแม่นยำ
 
@@ -18,8 +20,11 @@ KeyCheck รับภาพคีย์บอร์ดที่ผู้ใช�
 | --- | --- |
 | รูปแบบใช้งาน | กดถ่าย → ตรวจภาพ → ประมวลผล → แสดงผล ไม่ใช่ Real-time |
 | กลุ่มเป้าหมาย | ผู้ใช้ที่ถอดคีย์แคปทำความสะอาดหรือเปลี่ยนชุดคีย์แคป |
-| ขอบเขต | คีย์บอร์ดหนึ่งรุ่น คีย์แคปหนึ่งชุด Layout QWERTY |
+| ขอบเขต | คีย์บอร์ด QWERTY แถวเยื้อง (ANSI/ISO) หลายรุ่น ตัวอักษรอังกฤษพิมพ์บนหน้าปุ่ม; รองรับปุ่มที่มีอักษรไทยร่วม |
+| ตัวอักษรที่อ่าน | เฉพาะอังกฤษ A–Z; อักษรไทยบนปุ่มถูกละไว้ ไม่อ่านและไม่ตรวจ |
 | ตำแหน่งที่ตรวจ | A–Z จำนวน 26 ตำแหน่ง |
+| Layout อ้างอิง | Generic letter-block ในหน่วยปุ่ม (1u) ใช้ร่วมกันทุกรุ่นที่รองรับ ไม่ต้องวัดใหม่ทีละรุ่น |
+| การพิสูจน์ใช้ได้หลายรุ่น | Leave-keyboard-out: คีย์บอร์ดบางตัวอยู่ใน Test เท่านั้น |
 | Detector หลัก | YOLO11n แบบ Fine-tune หนึ่งคลาส `keycap` |
 | Detector เปรียบเทียบ | Faster R-CNN ResNet50-FPN V2 |
 | Detector เสริม | SSDLite320 MobileNetV3 Large หากเวลาพอ |
@@ -43,12 +48,13 @@ KeyCheck รับภาพคีย์บอร์ดที่ผู้ใช�
 
 ### 2.2 วัตถุประสงค์
 
-1. สร้าง Dataset ภาพคีย์บอร์ดพร้อม Bounding Box และ Ground Truth ของตำแหน่ง A–Z
+1. สร้าง Dataset ภาพจากคีย์บอร์ดหลายรุ่นพร้อม Bounding Box และ Ground Truth ของตำแหน่ง A–Z
 2. ฝึกและเปรียบเทียบ Detector อย่างน้อย 2 สถาปัตยกรรม
-3. อ่านตัวอักษรบนปุ่มและตรวจการประกอบผิดตำแหน่ง
+3. อ่านตัวอักษรอังกฤษบนปุ่มและตรวจการประกอบผิดตำแหน่ง
 4. สร้างเว็บต้นแบบที่ถ่ายภาพ อัปโหลด และแสดงผลได้
 5. แสดงสถานะไม่แน่ใจเมื่อหลักฐานไม่พอ แทนการเดาว่าปุ่มถูกหรือผิด
 6. ประเมินทั้งรายโมดูลและผลลัพธ์ปลายทาง
+7. ประเมินบนคีย์บอร์ดที่ไม่เคยเห็นในการฝึก และปฏิเสธรุ่นที่ไม่รองรับอย่างปลอดภัย
 
 ### 2.3 คำถามวิจัย
 
@@ -56,16 +62,18 @@ KeyCheck รับภาพคีย์บอร์ดที่ผู้ใช�
 - การเพิ่ม Detector ช่วยเหนือกว่า Baseline ที่ตัดตาม Layout หรือไม่ และในสภาพใด?
 - Error ส่วนใหญ่เกิดจากการปรับภาพ การตรวจกรอบ การอ่านตัวอักษร หรือการจับคู่ตำแหน่ง?
 - แสง มุมภาพ และรูปแบบการสลับที่ไม่อยู่ในชุดฝึกส่งผลอย่างไร?
+- ระบบทำงานบนคีย์บอร์ดที่ไม่เคยเห็นได้ดีแค่ไหนเทียบกับคีย์บอร์ดที่เคยเห็น และลักษณะใด (สีปุ่ม ฟอนต์ อักษรไทยร่วม Profile) ทำให้แย่ลง?
 
 ## 3. ขอบเขตและลำดับความสำคัญ
 
 ### 3.1 Must-have: งานหลักของ Mini Project
 
 - ภาพนิ่งทีละภาพ เห็นบริเวณ A–Z ครบ
-- คีย์บอร์ดและคีย์แคปชุดที่ใช้เก็บข้อมูล ไม่อ้างว่ารองรับรุ่นอื่น
-- ตัวพิมพ์ใหญ่ภาษาอังกฤษ A–Z ที่อยู่บนหน้าปุ่มและมองเห็นชัด
+- คีย์บอร์ด QWERTY แถวเยื้อง (ANSI/ISO) หลายรุ่น อ้างเฉพาะลักษณะที่มีใน Dataset และรายงานผลแยกรุ่นที่เคยเห็น/ไม่เคยเห็น
+- ตัวพิมพ์ใหญ่ภาษาอังกฤษ A–Z ที่อยู่บนหน้าปุ่มและมองเห็นชัด; ปุ่มที่มีอักษรไทยร่วมรองรับ โดยอ่านเฉพาะอังกฤษ
 - ตรวจการสลับปุ่มระหว่าง 26 ช่อง ไม่ใช่ตรวจการหายหรือกลับหัวของปุ่ม
-- ปรับ Perspective ด้วยการระบุสี่มุมด้วยมือได้
+- ปรับ Perspective ด้วยการระบุจุดอ้างอิงสี่จุดของบล็อกตัวอักษรด้วยมือได้ (§7.2)
+- ตรวจว่าปุ่มที่พบเข้ากับ Letter-block มาตรฐานหรือไม่ ถ้าไม่เข้าให้ปฏิเสธภาพ (§7.8)
 - Fine-tune YOLO11n และ Faster R-CNN; ใช้ OCR และกฎตรวจเดียวกัน
 - มี Baseline แบบไม่ใช้ Detector
 - แสดงกรอบผลตรวจ ตัวที่ควรเป็น ตัวที่พบ และเหตุผลเมื่อไม่แน่ใจ
@@ -79,11 +87,14 @@ KeyCheck รับภาพคีย์บอร์ดที่ผู้ใช�
 - ปุ่มดาวน์โหลดภาพผลตรวจ
 - กราฟเปรียบเทียบ Metrics จากผลทดลองจริง
 - ตัวจำแนกภาพ A–Z ที่ฝึกเอง หาก OCR ไม่ผ่าน Pilot
+- หาจุดอ้างอิงสี่จุดอัตโนมัติจากผล Detector โดยให้ผู้ใช้ยืนยัน/แก้ไข
 
 ### 3.3 Out of scope
 
-- คีย์บอร์ดทุกรุ่น หลาย Layout ภาษาไทย และหลายฟอนต์โดยอัตโนมัติ
-- คีย์แคปไม่มีตัวอักษร Side-print หรือภาพเอียงมาก
+- คีย์บอร์ดที่ไม่ใช่แถวเยื้องมาตรฐาน เช่น Ortholinear, Split, Alice/Ergo และ Layout อื่น เช่น AZERTY, QWERTZ, Dvorak
+- การอ่านหรือตรวจอักษรไทย (อักษรไทยบนปุ่มถูกละไว้)
+- Laptop/Chiclet keyboard ในชุดประเมินหลัก
+- คีย์แคปไม่มีตัวอักษร Side-print Artisan/Novelty หรือภาพเอียงมาก
 - การตรวจสวิตช์เสีย Key Chatter หรือรหัสที่ระบบปฏิบัติการได้รับ
 - การยืนยันว่าปุ่มหายจากการตรวจไม่พบเพียงอย่างเดียว
 - การตรวจความสูง/ทรงคีย์แคปผิดแถว และการกลับหัว
@@ -99,7 +110,7 @@ KeyCheck รับภาพคีย์บอร์ดที่ผู้ใช�
 2. เลือกถ่ายภาพหรืออัปโหลดไฟล์
 3. ตรวจภาพ Preview และถ่ายใหม่ได้ก่อนอัปโหลด
 4. หลังอัปโหลด ใช้ภาพที่ Backend แก้ EXIF orientation แล้วเป็นภาพอ้างอิงเดียวกัน
-5. ระบุสี่มุมพื้นที่คีย์บอร์ดตามลำดับ TL → TR → BR → BL
+5. ระบุจุดอ้างอิงสี่จุดของบล็อกตัวอักษรตามลำดับ TL → TR → BR → BL (กึ่งกลางช่อง Q, P, M, Z ตามตำแหน่ง ไม่ใช่ตามตัวอักษรที่เห็น §7.2)
 6. ยืนยันการตรวจและเห็นสถานะงาน
 7. ดูภาพพร้อมกรอบและรายการรายช่อง
 8. แก้ปุ่มตามคำแนะนำแล้วสร้างการตรวจใหม่
@@ -137,15 +148,23 @@ flowchart TD
 
 ### 5.1 แหล่งข้อมูล
 
-ใช้ภาพคีย์บอร์ดจริงที่ถ่ายเองเป็นข้อมูลหลัก เพื่อควบคุมสิทธิ์ใช้งานและรู้คำตอบจริง ภาพออนไลน์เป็นเพียงส่วนเสริมเมื่อมีสิทธิ์ชัดเจน ไม่จำเป็นสำหรับ MVP
+ใช้ภาพคีย์บอร์ดจริงที่ถ่ายเองเป็นข้อมูลหลัก เพื่อควบคุมสิทธิ์ใช้งานและรู้คำตอบจริง
+
+| แหล่ง | ใช้ได้กับ | เงื่อนไข |
+| --- | --- | --- |
+| ถ่ายเอง: คีย์บอร์ดที่ถอดปุ่มได้ (ยืมเพื่อน/ชมรม) | ทุกส่วน รวมภาพสลับและ Ground Truth รายช่อง | แหล่งหลัก |
+| ถ่ายเอง: คีย์บอร์ดที่ถอดปุ่มไม่ได้หรือไม่ควรถอด (เช่นห้องแล็บ) | ภาพถูกทั้งหมด: ฝึก Detector และวัด False-alarm | ต้องได้รับอนุญาตถ่าย |
+| Public dataset ที่ Label แล้ว (เช่น Roboflow Universe, Kaggle) | Train ของ Detector คลาส `keycap` เท่านั้น | ตรวจ License, แยกเป็นการทดลองเสริม, ห้ามอยู่ใน Validation/Test |
+| ภาพออนไลน์อื่น | Train ของ Detector เท่านั้น | เฉพาะที่มี License ชัด เช่น Creative Commons; บันทึก `source_url` และ `license` รายภาพ |
 
 Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได้ทดแทน Dataset ของคีย์แคป
 
 ### 5.2 Pilot และจำนวนตั้งต้น
 
-- Pilot OCR: 20–30 ภาพ ตัดภาพปุ่มด้วยมือและดูข้อผิดพลาดก่อนทำเว็บเต็มระบบ
+- Pilot OCR: 20–30 ภาพ จากคีย์บอร์ดอย่างน้อย 3 ตัว โดยต้องมีทั้งแบบอังกฤษล้วนและแบบไทย-อังกฤษ ตัดภาพปุ่มด้วยมือและดูข้อผิดพลาดก่อนทำเว็บเต็มระบบ
 - Pilot Pipeline: 50–80 ภาพ สำหรับทดสอบ Detector, OCR และพิกัดร่วมกัน
-- Dataset ตั้งต้น: ประมาณ 400 ภาพต้นฉบับ จากหลายรอบถ่าย; Pilot ที่คุณภาพผ่านรวมใน Train ได้ แต่ไม่ใช้เป็น Test ที่ไม่เคยเห็น
+- Dataset ตั้งต้น: ประมาณ 400 ภาพต้นฉบับที่มี Ground Truth รายช่อง จากคีย์บอร์ดเป้าหมาย 8–12 ตัว หลายรอบถ่าย (ประมาณ 30–50 ภาพต่อตัว) บวกภาพถูกทั้งหมดจากคีย์บอร์ดเพิ่มเติมตามที่หาได้; Pilot ที่คุณภาพผ่านรวมใน Train ได้ แต่ไม่ใช้เป็น Test ที่ไม่เคยเห็น
+- คีย์บอร์ดควรต่างกันทั้งสีปุ่ม/สีตัวอักษร ฟอนต์ ตำแหน่งตัวอักษรบนปุ่ม (กลาง/มุมซ้ายบน) Profile และการมี/ไม่มีอักษรไทย
 
 | กลุ่ม | จำนวนเป้าหมายตั้งต้น | ลักษณะ |
 | --- | ---: | --- |
@@ -157,6 +176,7 @@ Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได
 
 ### 5.3 ความหลากหลายที่ต้องเก็บ
 
+- คีย์บอร์ดหลายรุ่น สี ฟอนต์ และแบบมี/ไม่มีอักษรไทย (ความหลากหลายที่สำคัญที่สุดสำหรับ Tier 2)
 - แสงธรรมชาติ/แสงในห้อง ระยะถ่าย และเงาที่เปลี่ยนไป
 - กล้องและคีย์บอร์ดย้ายตำแหน่งจริงระหว่างรอบ
 - ภาพตรงและเอียงเล็กน้อยตามขอบเขต
@@ -168,8 +188,9 @@ Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได
 
 | ระดับ | Fields | วัตถุประสงค์ |
 | --- | --- | --- |
-| ภาพ | `image_id`, `capture_session_id`, `arrangement_id`, `device`, `lighting`, `split` | แยกข้อมูลและวิเคราะห์ตามสภาพ |
-| ภาพ | สี่มุมอ้างอิง, ขนาดภาพหลังแก้ EXIF | ปรับภาพและตรวจพิกัด |
+| ภาพ | `image_id`, `keyboard_id`, `capture_session_id`, `arrangement_id`, `device`, `lighting`, `split`, `source`, `license` | แยกข้อมูลและวิเคราะห์ตามสภาพ |
+| คีย์บอร์ด | `keyboard_id`, `form_factor` (ANSI/ISO, 60%/TKL/Full), `legend_style` (`en_only`/`th_en`), `legend_position`, `keycap_color`, `legend_color`, `profile` | วิเคราะห์ผลตามลักษณะคีย์บอร์ด |
+| ภาพ | จุดอ้างอิงสี่จุด (§7.2), ขนาดภาพหลังแก้ EXIF | ปรับภาพและตรวจพิกัด |
 | วัตถุ | Bounding Box ของทุกคีย์แคปที่มองเห็น, คลาส `keycap` | ฝึก Detector หนึ่งคลาส |
 | ช่อง A–Z | `slot_id`, `expected_label`, `actual_label`, `readable` | ประเมิน OCR และความผิดตำแหน่ง |
 | ช่อง A–Z | `ground_truth_status`, หมายเหตุผู้ตรวจ | แยกความจริงจากผล AI |
@@ -180,7 +201,10 @@ Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได
 
 ### 5.5 Train / Validation / Test
 
-- สัดส่วนตั้งต้น 70/15/15 โดยอิงกลุ่ม ไม่ใช่สุ่มแยกภาพที่แทบเหมือนกัน
+- **Leave-keyboard-out:** กัน **Unseen test keyboards** อย่างน้อย 2–3 ตัว (รวมอย่างน้อยหนึ่งตัวแบบไทย-อังกฤษ) ไว้ใน Test เท่านั้น ไม่มีภาพของคีย์บอร์ดเหล่านั้นใน Train/Validation
+- ส่วน Test ที่เหลือมาจากคีย์บอร์ดที่เคยเห็นแต่เป็นรอบถ่ายใหม่ เพื่อรายงานแยก Seen keyboards / Unseen keyboards
+- ถ้ามีคีย์บอร์ดพอ ให้กัน **Held-out validation keyboard** อีก 1 ตัวไว้ใน Validation เท่านั้น (ไม่มีภาพใน Train) เพื่อเลือก Model/Threshold ที่ Generalize ข้ามรุ่น ไม่ใช่เก่งเฉพาะรุ่นใน Train
+- คีย์บอร์ดที่เหลือแบ่ง 70/15/15 โดยอิงกลุ่ม ไม่ใช่สุ่มแยกภาพที่แทบเหมือนกัน
 - ภาพ Burst และภาพจากการจัดวางเดียวกันในรอบเดียวกันต้องอยู่ Split เดียวกัน
 - กันรอบถ่ายใหม่และรูปแบบการสลับบางแบบไว้ใน Test
 - การเรียงถูกทั้งหมดมีได้หลาย Split หากถ่ายคนละรอบจริงและไม่มีภาพซ้ำใกล้เคียง
@@ -216,7 +240,9 @@ Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได
 - Output: ข้อความดิบ กรอบข้อความ และ Recognition score ตามที่ Pipeline รองรับ
 - ทดลอง Crop ทั้งปุ่มเทียบกับบริเวณตัวอักษร หากรูปแบบการพิมพ์คงที่
 - ใช้ Uppercase และตัด Whitespace; ยอมรับ A–Z เพียงตัวเดียวในโหมด MVP
-- ถ้าเจอหลายตัวอักษร สัญลักษณ์คลุมเครือ หรือคะแนนต่ำ ให้ `uncertain`
+- **ปุ่มที่มีอักษรไทยร่วม:** กรองเฉพาะ Text box ที่เป็นตัวละติน A–Z ตัวเดียว แล้วละ Box ที่เป็นอักษรไทย/สัญลักษณ์อื่น; ไม่ใช้ตำแหน่ง Legend บนปุ่มเป็นกฎตายตัว เพราะต่างกันตามรุ่น
+- ระวังอักษรไทยที่หน้าตาคล้ายละติน ถูกอ่านเป็นตัวละติน; ต้องวัด Error นี้ใน Pilot ด้วยคีย์บอร์ดไทย-อังกฤษ และเลือก Recognition model/ภาษาให้เหมาะหลัง Pilot
+- ถ้าเจอตัวละติน A–Z มากกว่าหนึ่งตัว สัญลักษณ์คลุมเครือ หรือคะแนนต่ำ ให้ `uncertain`
 - อย่าแทน `0` เป็น `O`, `1` เป็น `I` อัตโนมัติโดยไม่มีผล Validation รองรับ
 - ห้ามใช้ตัวอักษรที่ Layout คาดหวังไปบังคับ OCR ให้ตอบตรง เพราะจะซ่อนความผิดจริง
 - Detector confidence และ OCR score เป็นคนละค่า ไม่ถือว่าเป็นความน่าจะเป็นที่ Calibration แล้ว
@@ -226,6 +252,8 @@ Pretrained Weights ใช้สำหรับ Transfer Learning ไม่ได
 หาก OCR ไม่ผ่าน Pilot ให้ Fine-tune `YOLO11n-cls` หรือเลือก Classifier ขนาดเล็กเพียงตัวเดียว แบ่งคลาส A–Z โดยใช้ Crop ที่ตรวจ Label แล้ว
 
 ใช้ Cross-entropy สำหรับการจำแนกหลายคลาส ปรับเกณฑ์ Reject จาก Validation และมีตัวอย่าง Blur/ตัวอักษรนอกขอบเขตสำหรับทดสอบการ Reject; Softmax สูงไม่ได้รับประกันว่าเป็นข้อมูลในขอบเขต
+
+ใน Tier 2 Classifier ที่ฝึกเองเสี่ยงไม่ Generalize ข้ามฟอนต์มากกว่า OCR สำเร็จรูป จึงต้องประเมินบน Unseen keyboards ก่อนเลือกใช้ และ Crop เฉพาะบริเวณตัวอักษรเพื่อลดการจำรูปทรงปุ่ม
 
 ไม่ฝึก OCR และ Classifier เพิ่มพร้อมกันโดยไม่มีเหตุผล หากเปลี่ยนตัวอ่าน ต้องใช้ตัวอ่านเดียวกันในทุก Detector ที่เปรียบเทียบ หรือรายงานเป็นการทดลองอีกชุด
 
@@ -269,11 +297,24 @@ Exposure checks ใช้สัดส่วน Pixel ที่ใกล้ค่
 
 $$\lambda\begin{bmatrix}x'\\y'\\1\end{bmatrix}=H\begin{bmatrix}x\\y\\1\end{bmatrix}$$
 
-- H คือเมทริกซ์ 3×3 จากมุมสี่จุดที่สอดคล้องกัน
+- H คือเมทริกซ์ 3×3 จากจุดอ้างอิงสี่จุดที่สอดคล้องกัน
 - ใช้ `getPerspectiveTransform` และ `warpPerspective` ของ OpenCV [S5]
-- ตรวจมุมให้อยู่ในขอบภาพ ไม่ไขว้กัน มีพื้นที่เพียงพอ และลำดับถูก
-- ตั้ง Canonical canvas ตามอัตราส่วนจริงของคีย์บอร์ดอ้างอิง ไม่กำหนดอัตราส่วนตามใจ
+- ตรวจจุดให้อยู่ในขอบภาพ ไม่ไขว้กัน มีพื้นที่เพียงพอ และลำดับถูก
 - หน้าปุ่มไม่ได้อยู่บนระนาบเดียวสมบูรณ์ จึงจำกัดมุมถ่ายและทดสอบผลกระทบ
+
+**Generic letter-block (Tier 2):** คีย์บอร์ด QWERTY แถวเยื้องแบบ ANSI และ ISO วางปุ่ม A–Z สัมพันธ์กันเหมือนกันเมื่อวัดในหน่วยปุ่ม (1u): แถว A เยื้องจากแถว Q ไป 0.25u และแถว Z เยื้องไป 0.75u จึงใช้พิกัดอ้างอิงชุดเดียวได้ทุกรุ่นที่รองรับ
+
+| จุดอ้างอิง | ตำแหน่งบนคีย์บอร์ด | พิกัด Canonical (u) |
+| --- | --- | --- |
+| TL | กึ่งกลางช่องซ้ายสุดของแถวบนของตัวอักษร (ปกติ Q) | (0, 0) |
+| TR | กึ่งกลางช่องขวาสุดของแถวบน (ปกติ P) | (9, 0) |
+| BR | กึ่งกลางช่องขวาสุดของแถวล่าง (ปกติ M) | (6.75, 2) |
+| BL | กึ่งกลางช่องซ้ายสุดของแถวล่าง (ปกติ Z) | (0.75, 2) |
+
+- ผู้ใช้แตะตาม **ตำแหน่งช่อง** ไม่ใช่ตามตัวอักษรที่เห็น เพราะปุ่มอาจถูกสลับอยู่
+- สี่จุดเป็นรูปสี่เหลี่ยมคางหมู ไม่ใช่สี่เหลี่ยมผืนผ้า ซึ่ง Homography รองรับได้
+- Canonical canvas = พิกัด u × `px_per_unit` บวก Margin รอบบล็อก; ตั้ง `px_per_unit` ให้ความละเอียดพอสำหรับ OCR จากผล Pilot
+- ขนาดปุ่มจริงต่างกันตามรุ่น (เช่น Pitch ประมาณ 19 มม. บน Desktop) แต่เมื่อ Normalize เป็นหน่วย u แล้วใช้กฎเดียวกันได้
 
 เก็บระบบพิกัดสามชุดอย่างชัดเจน:
 
@@ -299,7 +340,7 @@ $$c_x=\frac{x_{min}+x_{max}}{2},\quad c_y=\frac{y_{min}+y_{max}}{2}$$
 
 $$d_{ij}=\sqrt{\left(\frac{c_{x,i}-r_{x,j}}{s_x}\right)^2+\left(\frac{c_{y,i}-r_{y,j}}{s_y}\right)^2}$$
 
-โดย r_j คือจุดกึ่งกลางช่องอ้างอิง และ s_x, s_y คือ Key pitch ในภาพ Canonical ค่าเหล่านี้ทำให้ระยะไม่ขึ้นกับจำนวน Pixel โดยตรง
+โดย r_j คือจุดกึ่งกลางช่องอ้างอิง และ s_x, s_y คือ Key pitch ในภาพ Canonical ค่าเหล่านี้ทำให้ระยะไม่ขึ้นกับจำนวน Pixel โดยตรง ใน Generic letter-block ค่า s_x = s_y = 1u (= `px_per_unit` pixel) เหมือนกันทุกรุ่น
 
 ### 7.5 One-to-one assignment
 
@@ -335,6 +376,15 @@ Reason codes อย่างน้อย:
 ถ้าเป็นวงจรหลายปุ่ม เช่น A พบ S, S พบ D, D พบ A ให้แสดงรายการช่องก่อน ส่วนการสร้างลำดับย้ายปุ่มเป็นงานเสริม ไม่สร้างคำแนะนำสลับคู่ที่ทำให้ช่องอื่นผิดเพิ่ม
 
 หากมีตัวอ่านซ้ำ ตัวไม่ครบ หรือช่องใดไม่แน่ใจ ให้แสดงเฉพาะสิ่งที่ตรวจพบ ไม่บังคับให้ผลมี A–Z อย่างละหนึ่งตัว
+
+### 7.8 ตรวจว่าคีย์บอร์ดเข้ากับ Letter-block มาตรฐาน
+
+ก่อนตัดสินรายช่อง ให้ตรวจว่าปุ่มที่ Detector พบในภาพ Rectified วางตัวตรงกับกริดมาตรฐานหรือไม่ เพื่อไม่ให้ระบบตอบผิดอย่างมั่นใจบนคีย์บอร์ดที่ไม่รองรับ (เช่น Ortholinear/Split) หรือเมื่อผู้ใช้แตะจุดอ้างอิงผิดช่อง
+
+- วัดสัดส่วนช่องที่มี Detection อยู่ในระยะ Gating และค่า Residual เฉลี่ยของระยะจับคู่
+- ถ้าต่ำกว่าเกณฑ์ ให้ `rejected` พร้อม Error code `LAYOUT_MISMATCH` และขอให้ตรวจจุดอ้างอิงใหม่ ไม่สร้าง Summary
+- ตั้งเกณฑ์จาก Validation และทดสอบกับภาพ Ortholinear/Split ที่เก็บไว้เป็นชุด Robustness
+- Baseline แบบ Fixed crops ไม่มี Detection จึงตรวจข้อนี้ไม่ได้ ต้องรายงานเป็นข้อจำกัดของ Baseline
 
 ## 8. Training Specification
 
@@ -386,6 +436,9 @@ Reason codes อย่างน้อย:
 | ทั้งภาพ | Strict full-board accuracy | ทั้ง 26 ช่องถูกต้องและไม่มี Uncertain |
 | ภาพถูกทั้งหมด | False-alarm image rate | ภาพที่ไม่มีปุ่มผิดแต่ระบบแจ้งผิดอย่างน้อยหนึ่งช่อง |
 | ระบบ | Median/P95 latency, Peak memory | แยกขั้นตอนและ End-to-end |
+| ข้ามรุ่น | ทุก Metric ข้างต้นแยก Seen / Unseen keyboards และแยกราย `keyboard_id` | ช่องว่างระหว่าง Seen กับ Unseen คือหลักฐานว่าใช้กับคีย์บอร์ดคนอื่นได้แค่ไหน |
+| ข้ามรุ่น | แยกตาม `legend_style` (`en_only` / `th_en`) | ผลของอักษรไทยร่วมต่อ OCR |
+| การปฏิเสธ | Rejection rate ของภาพ Ortholinear/Split และภาพจุดอ้างอิงผิด | ระบบปฏิเสธรุ่นที่ไม่รองรับได้จริง |
 
 ### 9.2 นิยามการตรวจปุ่มผิด
 
@@ -428,7 +481,7 @@ SvelteKit + TypeScript, Tailwind CSS, Fetch API, Canvas/SVG overlay และ Br
 | Route | หน้าที่ | องค์ประกอบหลัก |
 | --- | --- | --- |
 | `/` | เริ่มตรวจ | ขอบเขต ปุ่มถ่าย/เลือกภาพ วิธีถ่าย |
-| `/inspect` | Preview และ Calibration | ภาพ เลือกสี่มุม ย้อนกลับ/ถ่ายใหม่ ยืนยัน |
+| `/inspect` | Preview และ Calibration | ภาพ เลือกจุดอ้างอิงสี่จุด ย้อนกลับ/ถ่ายใหม่ ยืนยัน |
 | `/inspections/[id]` | สถานะและผลตรวจ | ภาพ Overlay, Counts, รายการผิด/ไม่แน่ใจ |
 | `/history` | ประวัติใน Session | งานล่าสุดและลิงก์กลับไปดูผล; Should-have |
 
@@ -447,9 +500,10 @@ SvelteKit + TypeScript, Tailwind CSS, Fetch API, Canvas/SVG overlay และ Br
 
 ### 10.4 Calibration UI
 
-- ใช้ภาพจาก Backend หลังจัด Orientation แล้วเป็นฐานเลือกมุม
-- เก็บมุมเป็น Normalized coordinates 0–1 อ้างอิงขนาดภาพจริง
-- มีลำดับมุมและปุ่ม Undo/Reset
+- ใช้ภาพจาก Backend หลังจัด Orientation แล้วเป็นฐานเลือกจุด
+- เก็บจุดเป็น Normalized coordinates 0–1 อ้างอิงขนาดภาพจริง
+- แสดงภาพประกอบว่าต้องแตะกึ่งกลางช่องใด (ปกติ Q → P → M → Z) และย้ำว่าให้แตะตามตำแหน่ง ไม่ใช่ตามตัวอักษรที่เห็น
+- มีลำดับจุดและปุ่ม Undo/Reset
 - รองรับแตะและลากบนมือถือโดยไม่ให้หน้าเลื่อนระหว่างลากจุด
 - ตรวจ Quadrilateral ไม่ไขว้กันทั้ง Frontend และ Backend
 - เมื่อเปลี่ยนภาพ ต้องล้างมุมเดิม ห้ามนำ Calibration ของภาพเก่ามาใช้โดยอัตโนมัติ
@@ -494,7 +548,7 @@ SvelteKit + TypeScript, Tailwind CSS, Fetch API, Canvas/SVG overlay และ Br
 | POST | `/api/v1/uploads` | Multipart `image` | `image_id`, oriented dimensions, preview URL, expiry |
 | GET | `/api/v1/uploads/{id}/image` | ID + สิทธิ์ Session | ภาพ Preview ที่จัด Orientation แล้ว |
 | DELETE | `/api/v1/uploads/{id}` | ID + สิทธิ์ Session | ลบไฟล์ที่ยังไม่ผูกงาน หรือแจ้ง Conflict |
-| POST | `/api/v1/inspections` | Image ID, Layout ID, มุม 4 จุด | HTTP 202, Inspection ID, status URL |
+| POST | `/api/v1/inspections` | Image ID, Layout ID, จุดอ้างอิง 4 จุด | HTTP 202, Inspection ID, status URL |
 | GET | `/api/v1/inspections/{id}` | ID + สิทธิ์ Session | สถานะงานและผลเมื่อเสร็จ |
 | GET | `/api/v1/inspections/{id}/overlay` | ID + สิทธิ์ Session | ภาพผลตรวจถ้าสร้างไว้ |
 | DELETE | `/api/v1/inspections/{id}` | ID + สิทธิ์ Session | ลบงานที่จบแล้วและไฟล์ที่ไม่ถูกอ้างอิง |
@@ -507,17 +561,17 @@ SvelteKit + TypeScript, Tailwind CSS, Fetch API, Canvas/SVG overlay และ Br
 ```json
 {
   "image_id": "img_demo_001",
-  "layout_id": "qwerty_reference_v1",
-  "corners_normalized": [
-    [0.08, 0.18],
-    [0.92, 0.18],
-    [0.92, 0.82],
-    [0.08, 0.82]
+  "layout_id": "qwerty_stagger_letters_v1",
+  "reference_points_normalized": [
+    [0.18, 0.34],
+    [0.80, 0.33],
+    [0.68, 0.61],
+    [0.24, 0.62]
   ]
 }
 ```
 
-มุมเป็นตัวอย่างสมมติ ไม่ใช่ค่าที่ใช้ได้กับทุกภาพ Backend เลือก Model bundle ที่อนุมัติไว้ ไม่รับ Path ของโมเดลหรือคำสั่ง Python จาก Client
+จุดเป็นตัวอย่างสมมติ เรียงตาม TL → TR → BR → BL = กึ่งกลางช่อง Q, P, M, Z (§7.2) จึงเป็นรูปสี่เหลี่ยมคางหมู ไม่ใช่ค่าที่ใช้ได้กับทุกภาพ Error code `INVALID_CORNERS` คงชื่อเดิมไว้ แต่หมายถึงจุดอ้างอิงสี่จุดนี้ Backend เลือก Model bundle ที่อนุมัติไว้ ไม่รับ Path ของโมเดลหรือคำสั่ง Python จาก Client
 
 ### 11.4 ตัวอย่าง Result contract
 
@@ -527,7 +581,7 @@ SvelteKit + TypeScript, Tailwind CSS, Fetch API, Canvas/SVG overlay และ Br
 {
   "inspection_id": "ins_demo_001",
   "status": "completed",
-  "layout_id": "qwerty_reference_v1",
+  "layout_id": "qwerty_stagger_letters_v1",
   "model_bundle_id": "keycheck_candidate_v1",
   "coordinate_system": "original_oriented_normalized",
   "summary": {
@@ -566,13 +620,13 @@ Schema จริงเพิ่ม `detector_score`, `ocr_score`, `assignment_di
 {
   "error": {
     "code": "INVALID_CORNERS",
-    "message": "กรุณาเลือกมุมคีย์บอร์ดใหม่ตามลำดับ",
+    "message": "กรุณาเลือกจุดอ้างอิงใหม่ตามลำดับ Q → P → M → Z",
     "retryable": true
   }
 }
 ```
 
-Codes อย่างน้อย: `UNSUPPORTED_IMAGE`, `IMAGE_TOO_LARGE`, `IMAGE_DECODE_FAILED`, `INVALID_CORNERS`, `LAYOUT_NOT_FOUND`, `IMAGE_EXPIRED`, `QUEUE_FULL`, `MODEL_UNAVAILABLE`, `PROCESSING_FAILED`
+Codes อย่างน้อย: `UNSUPPORTED_IMAGE`, `IMAGE_TOO_LARGE`, `IMAGE_DECODE_FAILED`, `INVALID_CORNERS`, `LAYOUT_NOT_FOUND`, `LAYOUT_MISMATCH`, `IMAGE_EXPIRED`, `QUEUE_FULL`, `MODEL_UNAVAILABLE`, `PROCESSING_FAILED`
 
 ใช้ 413 สำหรับไฟล์ใหญ่, 415 สำหรับชนิดไม่รองรับ, 422 สำหรับข้อมูลไม่ผ่าน Validation, 429 สำหรับจำกัดปริมาณงาน และไม่ส่ง Stack trace ให้ผู้ใช้
 
@@ -582,14 +636,16 @@ Codes อย่างน้อย: `UNSUPPORTED_IMAGE`, `IMAGE_TOO_LARGE`, `IMAG
 
 | Field | Type / ความหมาย |
 | --- | --- |
-| `layout_id`, `version` | ตัวระบุถาวรและ Version |
-| `name`, `keyboard_model` | ชื่ออ้างอิง |
-| `canonical_width`, `canonical_height` | ขนาด Rectified image |
-| `reference_corners_definition` | จุดบนคีย์บอร์ดที่ต้องเลือกให้ตรงกัน |
-| `slots[]` | 26 ช่อง มี ID, expected_label, center, region และ row |
-| `key_pitch` | ระยะช่องอ้างอิงสำหรับ Matching |
+| `layout_id`, `version` | ตัวระบุถาวรและ Version เช่น `qwerty_stagger_letters_v1` |
+| `name`, `supported_form_factors` | ชื่ออ้างอิงและรุ่นที่รองรับ (ANSI/ISO row-staggered) |
+| `unit` , `px_per_unit`, `margin_u` | หน่วยพิกัด (u) และความละเอียด Canonical canvas |
+| `canonical_width`, `canonical_height` | ขนาด Rectified image ที่คำนวณจากค่าด้านบน |
+| `reference_points_definition` | จุดอ้างอิงสี่จุด TL/TR/BR/BL และพิกัด u (§7.2) |
+| `slots[]` | 26 ช่อง มี ID, expected_label, center (u), region (u) และ row |
+| `key_pitch` | 1u สำหรับ Matching |
+| `fit_thresholds` | เกณฑ์ตรวจ Letter-block (§7.8) |
 
-ตำแหน่งอ้างอิงต้องวัดจากคีย์บอร์ดจริงที่เรียงถูก ไม่ใช้กริดสี่เหลี่ยมเท่ากัน เพราะแถวมีการเยื้อง
+ตำแหน่งช่องใช้มาตรฐานแถวเยื้อง ไม่ใช้กริดสี่เหลี่ยมเท่ากัน และต้องตรวจกับคีย์บอร์ดจริงหลายรุ่นใน Pilot ว่าคลาดเคลื่อนไม่เกิน Gating ถ้ารุ่นใดคลาดเคลื่อนมาก ให้บันทึกเป็นข้อจำกัด ไม่แก้ด้วยการสร้าง Layout เฉพาะรุ่นใน MVP
 
 ### 12.2 Collection: uploads
 
@@ -599,7 +655,7 @@ Codes อย่างน้อย: `UNSUPPORTED_IMAGE`, `IMAGE_TOO_LARGE`, `IMAG
 
 ### 12.3 Collection: inspections
 
-`inspection_id`, `owner_session_hash`, `image_id`, `layout_id`, `layout_version`, `corners`, `homography`, `model_bundle_id`, `status`, `stage`, `summary`, `slots`, `suggestions`, `warnings`, `error`, `timings_ms`, `created_at`, `finished_at`, `expires_at`, `worker_lease`
+`inspection_id`, `owner_session_hash`, `image_id`, `layout_id`, `layout_version`, `reference_points`, `homography`, `model_bundle_id`, `status`, `stage`, `summary`, `slots`, `suggestions`, `warnings`, `error`, `timings_ms`, `created_at`, `finished_at`, `expires_at`, `worker_lease`
 
 Index: Unique ID, `(owner_session_hash, created_at)`, และ `(status, created_at)` สำหรับ Claim คิว
 
@@ -690,6 +746,9 @@ Environment variables ตัวอย่าง: `MONGODB_URI`, `STORAGE_ROOT`, `
 - Mutual swap ถูกเสนอเฉพาะคู่ยืนยันแล้ว
 - Summary รวมครบ 26 และตรงกับรายการ Slots
 - Coordinate overlay หลัง Resize ไม่เลื่อนจากตำแหน่งจริง
+- Generic letter-block: จุดอ้างอิง Q/P/M/Z แปลงแล้วได้พิกัด u ตาม §7.2 และ Slot centers ตรงมาตรฐานแถวเยื้อง
+- Layout fit check: Detection ที่เรียงแบบ Ortholinear หรือจุดอ้างอิงเลื่อนไปหนึ่งช่อง ได้ `LAYOUT_MISMATCH`
+- OCR ปุ่มไทย-อังกฤษ: ได้ตัวละตินตัวเดียว; มีตัวละตินสองตัวได้ `uncertain`
 
 ### 16.2 Integration tests
 
@@ -710,7 +769,7 @@ Environment variables ตัวอย่าง: `MONGODB_URI`, `STORAGE_ROOT`, `
 
 ### 16.4 ML error analysis
 
-แยกภาพตามแสง มุม Blur และชนิดการสลับ ตรวจตัวอย่าง False positive/False negative และ Confusion matrix ของตัวอักษร ไม่รายงานเพียงค่าเฉลี่ยรวม
+แยกภาพตามแสง มุม Blur ชนิดการสลับ `keyboard_id` และ `legend_style` ตรวจตัวอย่าง False positive/False negative และ Confusion matrix ของตัวอักษร ไม่รายงานเพียงค่าเฉลี่ยรวม
 
 ## 17. ตัวอย่างผลลัพธ์และข้อกำหนด Mockup
 
@@ -723,15 +782,17 @@ Environment variables ตัวอย่าง: `MONGODB_URI`, `STORAGE_ROOT`, `
 | สลับสองคู่และอ่านครบ | `correct=22`, `incorrect=4`, `uncertain=0` |
 | ภาพถูกแต่หนึ่งปุ่มอ่านไม่ได้ | `correct=25`, `incorrect=0`, `uncertain=1` ไม่ประกาศผ่านทั้งหมด |
 | ภาพไม่ครบตั้งแต่เริ่ม | `rejected` พร้อมขอภาพใหม่ ไม่สร้าง Summary หลอก |
+| ปุ่มไทย-อังกฤษ เรียงถูกครบ | `correct=26` เหมือนคีย์บอร์ดอังกฤษล้วน โดย `observed_label` เป็นตัวละตินเท่านั้น |
+| คีย์บอร์ด Ortholinear/Split หรือแตะจุดอ้างอิงผิดช่อง | `rejected` ด้วย `LAYOUT_MISMATCH` ไม่สร้าง Summary |
 
 นี่เป็น Expected behavior ไม่ใช่ผลจากโมเดลที่ฝึกแล้ว
 
 ### 17.2 หน้าถ่ายภาพ
 
 - Header: KeyCheck
-- ข้อความ: ตรวจคีย์แคป A–Z บนคีย์บอร์ดที่รองรับ
+- ข้อความ: ตรวจคีย์แคป A–Z บนคีย์บอร์ด QWERTY แถวเยื้องทั่วไป (อ่านเฉพาะตัวอักษรอังกฤษ)
 - พื้นที่ Preview, ปุ่มถ่ายภาพ, เลือกภาพ, ถ่ายใหม่
-- ขั้นตอนเลือกสี่มุมและยืนยัน
+- ขั้นตอนเลือกจุดอ้างอิงสี่จุดของบล็อกตัวอักษรและยืนยัน
 - คำเตือน: ถ่ายด้านบน หลีกเลี่ยงเงาสะท้อนและมือบัง
 
 ### 17.3 หน้าผลตรวจ
@@ -747,8 +808,8 @@ Environment variables ตัวอย่าง: `MONGODB_URI`, `STORAGE_ROOT`, `
 
 | ระยะ | งาน | เงื่อนไขก่อนเดินต่อ |
 | --- | --- | --- |
-| 1: Feasibility | ถ่าย 20–30 ภาพ ทดลอง OCR บน Crop ด้วยมือและ Baseline | รู้ว่าปัญหาหลักคือการอ่านหรือ Geometry |
-| 2: Dataset | กำหนด Annotation guide ถ่าย/Label/แบ่งกลุ่มข้อมูล | ตรวจ Labels และไม่มีภาพซ้ำข้าม Split |
+| 1: Feasibility | ถ่าย 20–30 ภาพจากคีย์บอร์ด ≥3 ตัว (มีไทย-อังกฤษ) ทดลอง OCR บน Crop ด้วยมือ, Generic layout และ Baseline | รู้ว่าปัญหาหลักคือการอ่านหรือ Geometry และ Generic layout ใช้ได้ข้ามรุ่น |
+| 2: Dataset | ยืมคีย์บอร์ด 8–12 ตัว กำหนด Annotation guide ถ่าย/Label/แบ่งกลุ่มข้อมูล | ตรวจ Labels, ไม่มีภาพซ้ำข้าม Split, Unseen keyboards ถูกล็อกใน Test |
 | 3: AI baseline | Rectification, Fixed crops, OCR, Matching | มีผล Baseline และ Error report |
 | 4: Detector training | YOLO11n และ Faster R-CNN; SSDLite ถ้าเวลาเหลือ | มี Checkpoints/Validation metrics ทำซ้ำได้ |
 | 5: Backend | Upload, Queue, Worker, API, Ownership | Integration tests ผ่าน |
@@ -766,17 +827,21 @@ Environment variables ตัวอย่าง: `MONGODB_URI`, `STORAGE_ROOT`, `
 | โมเดลจำตำแหน่งแทนหน้าปุ่ม | หมุนเวียนรูปแบบสลับและแยกชุดทดสอบจริง |
 | Detector ไม่ช่วยเหนือ Baseline | รายงานผลตามจริง ใช้เป็นข้อค้นพบ ไม่ฝืนเพิ่มความซับซ้อน |
 | Annotation ใช้เวลามาก | เริ่ม Pilot ใช้ Assist annotation แล้วตรวจด้วยคน |
-| ภาพเอียงทำให้ Matching ผิด | จำกัดมุม ช่วยเลือกสี่มุม และตั้ง Gating |
+| ภาพเอียงทำให้ Matching ผิด | จำกัดมุม ช่วยเลือกจุดอ้างอิง และตั้ง Gating |
 | Confidence สูงแต่ผิด | ประเมินบนข้อมูลจริงและรายงาน Error ไม่เรียก Score ว่า Accuracy |
 | GPU/Dependency จำกัด | เริ่มโมเดลเล็ก แยก Training/Serving และล็อกเวอร์ชัน |
-| ขยาย Scope มากเกินไป | ทำ A–Z หนึ่งชุดให้ครบก่อน ไม่เพิ่มภาษาไทย/Real-time ใน MVP |
+| ขยาย Scope มากเกินไป | ทำ A–Z ให้ครบก่อน ไม่อ่านภาษาไทย ไม่ทำ Real-time ใน MVP |
+| หาคีย์บอร์ดที่ถอดปุ่มได้ไม่พอ | เริ่มจากคีย์บอร์ดตัวเองให้ Pipeline ครบก่อน; ใช้คีย์บอร์ดที่ถอดปุ่มไม่ได้เป็นภาพถูกทั้งหมด; ลดจำนวน Unseen keyboards แต่ไม่ต่ำกว่า 2 ตัว |
+| อักษรไทยทำให้ OCR อ่านผิด | Pilot ด้วยคีย์บอร์ดไทย-อังกฤษตั้งแต่ Phase 1; กรองเฉพาะละติน; รายงานผลแยก `legend_style` |
+| Generic layout ไม่ตรงบางรุ่น | ตรวจใน Pilot; ใช้ Layout fit check ปฏิเสธแทนการเดา (§7.8) |
+| ผลบน Unseen keyboards ต่ำกว่า Seen มาก | รายงานตามจริงเป็นข้อค้นพบ; วิเคราะห์ว่าลักษณะใดของคีย์บอร์ดทำให้แย่ลง |
 
 ## 20. สิ่งส่งมอบและ Definition of Done
 
 - [ ] Specification และขอบเขตที่อาจารย์เห็นชอบ
 - [ ] Dataset พร้อม Label, Annotation guide และ Split manifest
 - [ ] Training/Evaluation scripts และ Config ที่ทำซ้ำได้
-- [ ] ผลเปรียบเทียบอย่างน้อย 2 Detector และ Baseline
+- [ ] ผลเปรียบเทียบอย่างน้อย 2 Detector และ Baseline แยก Seen / Unseen keyboards
 - [ ] Model bundle ที่เลือกพร้อม Model card และข้อจำกัด
 - [ ] API และเว็บ Capture-to-result ที่ใช้งานได้
 - [ ] Tests ครอบคลุมพิกัด Assignment Upload และการงดตอบ

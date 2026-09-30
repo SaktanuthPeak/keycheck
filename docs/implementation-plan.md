@@ -1,8 +1,10 @@
 # KeyCheck — Implementation Plan
 
-**อ้างอิง:** [`keycheck-technical0-specification.md`](./keycheck-technical0-specification.md) (v1.0, 30 ก.ย. 2026)
-**เวอร์ชันแผน:** 0.1 — 1 ตุลาคม 2026
+**อ้างอิง:** [`keycheck-technical-specification.md`](./keycheck-technical-specification.md) (v1.1, 1 ต.ค. 2026)
+**เวอร์ชันแผน:** 0.2 — 1 ตุลาคม 2026
 **สถานะ:** ร่างสำหรับตกลงลำดับงาน ยังไม่ได้เริ่ม Implement
+
+> **v0.2:** ปรับเป็นขอบเขต **Tier 2** — คีย์บอร์ด QWERTY แถวเยื้อง (ANSI/ISO) หลายรุ่น อ่านเฉพาะอังกฤษ A–Z (ปุ่มไทย-อังกฤษรองรับโดยละอักษรไทย), Generic letter-block layout, Leave-keyboard-out test และใช้ Google Colab เป็น Training environment
 
 > ระยะเวลาในแผนนี้เป็นค่าประมาณเพื่อจัดลำดับเท่านั้น ต้องปรับหลังผ่าน Gate ของ Phase 1 เพราะผล OCR Pilot เป็นตัวกำหนดว่าต้องเพิ่มงาน Classifier สำรองหรือไม่
 
@@ -11,10 +13,11 @@
 ## 0. หลักการจัดลำดับ
 
 1. **พิสูจน์ว่าอ่านคีย์แคปได้ก่อนสร้างระบบเต็ม** (Spec §18) — ถ้า OCR/Geometry ไม่ผ่าน งานเว็บทั้งหมดจะสูญเปล่า
-2. **ล็อก Contract เร็ว** — Layout JSON, Result schema (§11.4) และ Error contract (§11.5) ต้องนิ่งก่อน Backend/Frontend เริ่ม เพื่อให้ทำคู่ขนานกับงาน AI ได้ด้วย Mock pipeline
-3. **Baseline ก่อน Detector** — ใช้ OCR + Matching + Decision ชุดเดียวกัน Detector เป็นแค่ตัวเสียบเพิ่ม (§6.4, §8.3)
-4. **Test split ห้ามแตะจนถึง Phase 8** — แบ่งและล็อกตั้งแต่ Phase 2 ใช้ Validation เลือกทุกอย่าง
-5. **Must-have ให้ครบก่อน Should-have** (§3.1 / §3.2)
+2. **ให้ Pipeline ครบบนคีย์บอร์ดตัวเองก่อน แล้วค่อยขยายหลายรุ่น** — ออกแบบ Generic layout ตั้งแต่แรก แต่ไม่รอยืมคีย์บอร์ดครบก่อนเริ่มงาน
+3. **ล็อก Contract เร็ว** — Layout JSON, Result schema (§11.4) และ Error contract (§11.5) ต้องนิ่งก่อน Backend/Frontend เริ่ม เพื่อให้ทำคู่ขนานกับงาน AI ได้ด้วย Mock pipeline
+4. **Baseline ก่อน Detector** — ใช้ OCR + Matching + Decision ชุดเดียวกัน Detector เป็นแค่ตัวเสียบเพิ่ม (§6.4, §8.3)
+5. **Test split ห้ามแตะจนถึง Phase 8** — แบ่งและล็อกตั้งแต่ Phase 2 ใช้ Validation เลือกทุกอย่าง รวมถึง **Unseen test keyboards ที่ห้ามปรากฏใน Train/Validation** (ส่วน Held-out validation keyboard ห้ามปรากฏใน Train)
+6. **Must-have ให้ครบก่อน Should-have** (§3.1 / §3.2)
 
 ### 0.1 ภาพรวม Phases และการพึ่งพา
 
@@ -47,8 +50,9 @@ flowchart LR
 | สัปดาห์ | สาย A: AI/Data | สาย B: Web |
 | --- | --- | --- |
 | 1 | P0 Setup, Dependency spike | P0 Generate backend/frontend |
-| 2–3 | P1 OCR Pilot, Layout v1, Rectification | — |
-| 4–6 | P2 ถ่าย/Annotate Dataset, Pilot pipeline 50–80 ภาพ | P5 Backend (Upload, Session, Queue, Worker + Mock) |
+| 1–3 | ติดต่อยืมคีย์บอร์ด 8–12 ตัว (ทำคู่ขนานตลอด) | — |
+| 2–3 | P1 OCR Pilot (≥3 คีย์บอร์ด), Generic layout, Rectification | — |
+| 4–7 | P2 ถ่าย/Annotate Dataset ทีละคีย์บอร์ด, Pilot pipeline 50–80 ภาพ | P5 Backend (Upload, Session, Queue, Worker + Mock) |
 | 6–8 | P3 AI Core + Baseline บน Validation | P5 ต่อ / P6 Frontend |
 | 8–11 | P4 Train YOLO11n, Faster R-CNN (SSDLite ถ้าเหลือเวลา) | P6 Frontend, UX บนมือถือ |
 | 11–12 | P4 เลือกโมเดลจาก Validation | P7 Integration, Docker, HTTPS proxy |
@@ -88,10 +92,18 @@ flowchart LR
 
 - [ ] ทดลองติดตั้ง `paddleocr`/`paddlepaddle` + `torch`/`torchvision` + `ultralytics` + `opencv` ใน Env เดียว (CPU) เพื่อตรวจว่าชนกันหรือไม่ (§14.2)
 - [ ] ตัดสินใจ: Serving env เดียว (Worker) หรือแยก Training env ออก
-- [ ] ตรวจ GPU/VRAM ที่มีจริงสำหรับการฝึก (Local / Colab / Lab server)
 - [ ] ตั้ง `ai/` เป็น Python package ของตัวเอง (pyproject แยก) เพื่อให้ Worker และ Training scripts import ร่วมกัน
 
-**Exit criteria:** Repo มีโครงสร้างครบ, Backend/Frontend รันได้เปล่า ๆ, รู้ Env strategy และ Hardware ที่ใช้ฝึก
+### 0.E Training environment: Google Colab
+
+- [ ] Notebook บาง ๆ (`notebooks/train_colab.ipynb`): Mount Drive → Clone repo → `pip install -e ai/[train]` ด้วยเวอร์ชันที่ Pin → เรียก Training script พร้อม Config จาก `experiments/` — **ไม่เขียน Logic ใน Notebook**
+- [ ] เก็บ Dataset เป็น `.zip` บน Drive แล้ว Copy ไปแตกที่ `/content` ก่อนฝึก (อ่านไฟล์เล็กจำนวนมากจาก Drive ช้า)
+- [ ] Checkpoint ลง Drive ทุก Epoch และ Resume ได้เมื่อ Runtime หลุด
+- [ ] ทุก Run บันทึก `pip freeze`, `nvidia-smi` (ชนิด GPU), Seed, Config ลง `experiments/<run_id>/`
+- [ ] **Latency ใช้งานจริงวัดบนเครื่องที่รัน Worker เท่านั้น** ไม่วัดบน Colab (§8.3)
+- [ ] สำรอง: Kaggle Notebooks (GPU ฟรีรายสัปดาห์) หรือ Colab Pro ถ้าต้องฝึก 960px / หลาย Seed
+
+**Exit criteria:** Repo มีโครงสร้างครบ, Backend/Frontend รันได้เปล่า ๆ, รู้ Env strategy, Colab notebook ฝึก YOLO11n ตัวอย่างจนจบและ Resume ได้
 
 ---
 
@@ -102,14 +114,14 @@ flowchart LR
 ### 1.A คู่มือถ่ายและ Layout อ้างอิง
 
 - [ ] เขียน `docs/capture-guide.md` ฉบับร่าง: มุม ระยะ แสง ห้ามมือบัง ห้ามมีป้ายกำกับในภาพ (§5.3)
-- [ ] กำหนด `reference_corners_definition` — จุดสี่มุมบนคีย์บอร์ดที่ผู้ใช้ต้องแตะ (ต้องชี้ได้ชัดบนตัวเครื่องจริง)
-- [ ] วัดคีย์บอร์ดจริงเพื่อกำหนด `canonical_width/height` ตามอัตราส่วนจริง
-- [ ] สร้าง `layouts/qwerty_reference_v1.json`: 26 Slots พร้อม `slot_id`, `expected_label`, `center`, `region`, `row`, และ `key_pitch` — **วัดจากภาพจริงที่เรียงถูก ไม่ใช้กริดเท่ากัน** (§12.1)
+- [ ] สร้าง `layouts/qwerty_stagger_letters_v1.json` แบบ **Generic letter-block ในหน่วย u** (Spec §7.2, §12.1): 26 Slots พร้อม `slot_id`, `expected_label`, `center`, `region`, `row`; จุดอ้างอิง Q(0,0) · P(9,0) · M(6.75,2) · Z(0.75,2); `key_pitch` = 1u
+- [ ] ตรวจกับคีย์บอร์ดจริงทุกตัวใน Pilot ว่ากึ่งกลางปุ่มหลัง Rectify คลาดจาก Generic layout ไม่เกิน Gating (บันทึกรุ่นที่คลาดมาก)
+- [ ] เริ่มรายการคีย์บอร์ดที่จะยืม (`data/keyboards.csv`: `keyboard_id`, form factor, `legend_style`, สี, Profile, ถอดปุ่มได้ไหม)
 
 ### 1.B เก็บภาพ Pilot
 
-- [ ] ถ่าย 20–30 ภาพ: ถูกทั้งหมด + สลับบางคู่ หลายแสง
-- [ ] บันทึกสี่มุมด้วยมือและ `actual_label` ของทุกช่อง
+- [ ] ถ่าย 20–30 ภาพจาก **คีย์บอร์ดอย่างน้อย 3 ตัว** ที่มีทั้งแบบ `en_only` และ `th_en`: ถูกทั้งหมด + สลับบางคู่ หลายแสง
+- [ ] บันทึกจุดอ้างอิงสี่จุดด้วยมือและ `actual_label` ของทุกช่อง
 
 ### 1.C Prototype scripts (ใน `ai/`, ยังไม่ต้องสวย)
 
@@ -118,6 +130,7 @@ flowchart LR
 - [ ] **OCR บน Crop ที่ตัดด้วยมือ** → วัด Character accuracy แยกโมดูล
 - [ ] **Baseline แบบ Fixed layout crops** → OCR → เทียบ Layout
 - [ ] ทดลอง Crop ทั้งปุ่ม เทียบ Crop เฉพาะบริเวณตัวอักษร (§6.2)
+- [ ] **กรองเฉพาะตัวละติน A–Z บนปุ่มไทย-อังกฤษ** และวัดว่าอักษรไทยถูกอ่านเป็นตัวละตินผิดบ่อยแค่ไหน; เทียบ Recognition model/ภาษาของ PaddleOCR
 - [ ] ทดลอง Resolution ของ Canonical canvas (ต้องละเอียดพอให้ OCR อ่านได้)
 
 ### 1.D Error report
@@ -131,44 +144,57 @@ flowchart LR
 | --- | --- |
 | OCR อ่านได้ดีบน Crop ด้วยมือ | ใช้ PP-OCRv5 ต่อ เริ่ม P2/P3/P5 |
 | OCR อ่านไม่ได้ในระดับที่ยอมรับได้ | เพิ่มงาน **Classifier A–Z สำรอง** (`YOLO11n-cls`, §6.3) เข้า P3 และต้องเก็บ Crop ที่ Label แล้วเพิ่มใน P2 |
-| Geometry เป็นปัญหาหลัก | ปรับ Corner definition / Canonical canvas / จำกัดมุมถ่าย ก่อนเก็บ Dataset จริง |
+| Geometry เป็นปัญหาหลัก | ปรับจุดอ้างอิง / `px_per_unit` / จำกัดมุมถ่าย ก่อนเก็บ Dataset จริง |
+| OCR ดีบน `en_only` แต่แย่บน `th_en` | ปรับตัวกรองละติน / Crop ตำแหน่งตัวอักษร ก่อนเดินต่อ; ถ้าแก้ไม่ได้ต้องคุยกับอาจารย์เรื่องลดขอบเขตเป็น `en_only` |
+| Generic layout คลาดเคลื่อนเกิน Gating ในบางรุ่น | บันทึกเป็นรุ่นไม่รองรับ หรือปรับ Gating; ไม่สร้าง Layout เฉพาะรุ่นใน MVP |
 
-**Exit criteria:** มี Pilot report, Layout v1, ตัดสินใจ OCR vs Classifier แล้ว
+**Exit criteria:** มี Pilot report, Generic layout v1 ที่ตรวจกับ ≥3 คีย์บอร์ดแล้ว, ตัดสินใจ OCR vs Classifier แล้ว
 
 ---
 
 ## Phase 2 — Dataset และ Annotation (Spec §5)
 
-**เป้าหมาย:** Dataset ~400 ภาพที่ Label ครบ แบ่ง Split แบบกลุ่ม และล็อก Test ไว้
+**เป้าหมาย:** Dataset ~400 ภาพที่ Label ครบ จากคีย์บอร์ด 8–12 ตัว แบ่ง Split แบบกลุ่ม + Leave-keyboard-out และล็อก Test ไว้
 
 ### 2.A เอกสารและนโยบาย
 
-- [ ] `docs/annotation-guide.md`: กรอบคีย์แคปทุกปุ่มที่มองเห็น (ไม่ใช่แค่ A–Z), นโยบายปุ่มโดนตัดขอบ, การบันทึก `readable`
-- [ ] **ตัดสินใจเรื่องพิกัด Annotation:** แนะนำ Annotate กรอบบนภาพ `original_oriented` + สี่มุมอ้างอิง แล้วใช้สคริปต์สร้างชุด Rectified สำหรับฝึก (ไม่ผูก Annotation กับ Canvas version) และใช้การ Jitter มุมจำลองความคลาดเคลื่อนตอนผู้ใช้แตะ
+- [ ] `docs/annotation-guide.md`: กรอบคีย์แคปทุกปุ่มที่มองเห็น (ไม่ใช่แค่ A–Z), นโยบายปุ่มโดนตัดขอบ, การบันทึก `readable`, ปุ่มไทย-อังกฤษให้ `actual_label` เป็นตัวอังกฤษเท่านั้น
+- [ ] **ตัดสินใจเรื่องพิกัด Annotation:** แนะนำ Annotate กรอบบนภาพ `original_oriented` + จุดอ้างอิงสี่จุด แล้วใช้สคริปต์สร้างชุด Rectified สำหรับฝึก (ไม่ผูก Annotation กับ Canvas version) และใช้การ Jitter จุดจำลองความคลาดเคลื่อนตอนผู้ใช้แตะ
 - [ ] แผนการจัดวาง (Arrangement schedule): หมุนเวียนคู่สลับให้ **ทุกตัวอักษรอยู่นอกตำแหน่งหลายครั้ง** ทั้งข้างกันและคนละแถว (§5.3) และกันบางรูปแบบไว้ให้ Test เท่านั้น
 
-### 2.B เก็บภาพ
+### 2.B หาคีย์บอร์ดและเก็บภาพ
 
+- [ ] **ยืมคีย์บอร์ดที่ถอดปุ่มได้ 8–12 ตัว** (เพื่อน, ชมรม) ให้ต่างกันทั้งสี ฟอนต์ ตำแหน่ง Legend Profile และ `en_only`/`th_en`
+- [ ] **ขออนุญาตถ่ายคีย์บอร์ดห้องแล็บ** (ถอดปุ่มไม่ได้) เป็นภาพถูกทั้งหมด → ใช้ฝึก Detector และวัด False-alarm
+- [ ] **ตัดสินใจก่อนถ่าย (D10):** **Unseen test keyboards** 2–3 ตัว (มี `th_en` อย่างน้อยหนึ่งตัว) ไว้ Test เท่านั้น + **Held-out validation keyboard** 1 ตัวไว้ Validation เท่านั้น ถ้ามีพอ
 - [ ] Pilot pipeline 50–80 ภาพก่อน → ตรวจว่า Annotation/Converter/Split ใช้ได้ทั้งเส้น
-- [ ] เก็บให้ได้เป้า: ถูกทั้งหมด 100 / สลับหนึ่งคู่ 200 / สลับ 2–3 คู่ 100 (§5.2) จากหลายรอบถ่าย
-- [ ] ชุดภาพใช้ไม่ได้แยกต่างหาก: เบลอ, สะท้อน, ปิดบัง, ถ่ายไม่ครบ
+- [ ] เก็บให้ได้เป้า ~400 ภาพที่มี Ground Truth: ถูกทั้งหมด 100 / สลับหนึ่งคู่ 200 / สลับ 2–3 คู่ 100 (§5.2) กระจายประมาณ 30–50 ภาพต่อคีย์บอร์ด หลายรอบถ่าย
+- [ ] ชุด Robustness แยกต่างหาก: เบลอ, สะท้อน, ปิดบัง, ถ่ายไม่ครบ, **Ortholinear/Split** (ทดสอบ `LAYOUT_MISMATCH`), **แตะจุดอ้างอิงผิดช่อง**
+
+### 2.B′ ข้อมูลเสริมสำหรับ Detector (ทำเมื่อ Detector ต้องการข้อมูลเพิ่ม)
+
+- [ ] Public dataset ที่ Label แล้ว (Roboflow Universe / Kaggle) — ตรวจ License, แปลงเป็นคลาส `keycap`
+- [ ] ภาพ Creative Commons — บันทึก `source`, `source_url`, `license` รายภาพ, ตรวจซ้ำด้วย Perceptual hash
+- [ ] ใช้เฉพาะ Train และรายงานเป็นการทดลองเสริม: ฝึกแบบมี/ไม่มีข้อมูลเสริมแล้วเทียบบน Validation
 
 ### 2.C Annotation
 
 - [ ] เลือกเครื่องมือ (เช่น CVAT / Label Studio) ที่ Export COCO ได้
 - [ ] ใช้ Assist annotation (เช่นโมเดลจาก Pilot) แล้วให้คนตรวจทาน (§19)
 - [ ] ตาราง Ground Truth รายช่อง: `slot_id`, `expected_label`, `actual_label`, `readable`, `ground_truth_status`, หมายเหตุ
-- [ ] Metadata ระดับภาพ: `image_id`, `capture_session_id`, `arrangement_id`, `device`, `lighting`, `split`
+- [ ] Metadata ระดับภาพ: `image_id`, `keyboard_id`, `capture_session_id`, `arrangement_id`, `device`, `lighting`, `split`, `source`, `license`
+- [ ] Metadata ระดับคีย์บอร์ด (§5.4): `form_factor`, `legend_style`, `legend_position`, สีปุ่ม/ตัวอักษร, `profile`
 
 ### 2.D Tooling (ใน `ai/`)
 
 - [ ] สคริปต์สร้าง Manifest พร้อม SHA-256 ของทุกภาพ + ตรวจ Duplicate / Near-duplicate
-- [ ] **Group split 70/15/15** ตาม `capture_session_id` + `arrangement_id` (Burst อยู่ Split เดียวกัน, §5.5)
-- [ ] Validator: กรอบอยู่ในภาพ, Class ID ถูก, 26 Slots ครบ, ไม่มีภาพซ้ำข้าม Split
+- [ ] **Leave-keyboard-out** ก่อน: Unseen test keyboards → Test ทั้งหมด, Held-out validation keyboard → Validation ทั้งหมด
+- [ ] **Group split 70/15/15** สำหรับคีย์บอร์ดที่เหลือ ตาม `capture_session_id` + `arrangement_id` (Burst อยู่ Split เดียวกัน, §5.5)
+- [ ] Validator: กรอบอยู่ในภาพ, Class ID ถูก, 26 Slots ครบ, ไม่มีภาพซ้ำข้าม Split, **ไม่มี `keyboard_id` ของ Unseen test keyboards ใน Train/Validation และของ Held-out validation keyboard ใน Train**, ข้อมูลเสริมจากเว็บไม่อยู่ใน Validation/Test
 - [ ] Converter: COCO → YOLO format และ COCO → Torchvision dataset (Background class ตาม API)
 - [ ] บันทึก `dataset_version` และ `split_manifest_hash`
 
-**Exit criteria:** Labels ผ่าน Validator, ไม่มีภาพซ้ำข้าม Split, **Test split ถูกล็อก** (Hash ใน Git)
+**Exit criteria:** Labels ผ่าน Validator, ไม่มีภาพซ้ำข้าม Split, **Test split, รายชื่อ Unseen test keyboards และ Held-out validation keyboard ถูกล็อก** (Hash ใน Git)
 
 ---
 
@@ -188,7 +214,8 @@ flowchart LR
 | --- | --- | --- |
 | Preprocessing | `ai/preprocessing/` | EXIF normalize, Quality (Variance of Laplacian, Exposure clipping ratio), Corner validation (อยู่ในภาพ / ไม่ไขว้ / พื้นที่พอ / ลำดับ TL→TR→BR→BL), Homography |
 | Coordinates | `ai/preprocessing/` | แปลงระหว่าง `original_oriented` ↔ `rectified` ↔ `model_input` (ย้อน Letterbox), แปลงมุมกรอบทั้งสี่ด้วย H⁻¹ เป็น Polygon |
-| Recognition | `ai/recognition/` | PP-OCRv5 wrapper, Normalize (Uppercase, trim), ยอมรับ A–Z ตัวเดียว, ไม่แปลง 0→O / 1→I, **ไม่ใช้ Expected label ช่วย OCR** |
+| Recognition | `ai/recognition/` | PP-OCRv5 wrapper, Normalize (Uppercase, trim), **กรองเฉพาะ Box ที่เป็นละติน A–Z ตัวเดียว ละอักษรไทย**, ละตินมากกว่าหนึ่งตัว → `uncertain`, ไม่แปลง 0→O / 1→I, **ไม่ใช้ Expected label ช่วย OCR** |
+| Layout fit check | `ai/matching/` | ตรวจสัดส่วนช่องที่มี Detection ในระยะ Gating + Residual เฉลี่ย → ไม่ผ่านให้ `rejected` / `LAYOUT_MISMATCH` (Spec §7.8) |
 | Matching | `ai/matching/` | Center + Normalized distance ด้วย `key_pitch`, Cost matrix + **Dummy/unmatched columns**, Gating, `linear_sum_assignment`, ตรวจ Ambiguity (ระยะคู่ดีสุดใกล้คู่รอง) |
 | Decision | `ai/matching/` | Threshold แยกแต่ละหลักฐาน (ไม่คูณรวม) → `correct` / `incorrect` / `uncertain` + Reason |
 | Suggestion | `ai/matching/` | Mutual swap เมื่อทั้งสองช่องยืนยันได้; Cycle ให้แสดงรายการช่อง; ไม่เสนอเมื่อมี Uncertain ที่เกี่ยวข้อง |
@@ -201,6 +228,9 @@ flowchart LR
 - [ ] ภาพ EXIF หมุน vs ภาพปกติได้พิกัดอ้างอิงเดียวกัน
 - [ ] Assignment ไม่ให้สอง Detection เข้าช่องเดียว; กรอบขาด/เกิน/ห่างมากไม่ถูกบังคับจับคู่
 - [ ] OCR ว่าง / หลายตัว / Score ต่ำ → `uncertain`
+- [ ] OCR คืน "A" + อักษรไทย → อ่านได้ "A"; คืน "A" + "S" → `uncertain`
+- [ ] Detection วางแบบ Ortholinear หรือจุดอ้างอิงเลื่อนไปหนึ่งช่อง → `LAYOUT_MISMATCH`
+- [ ] Generic layout: พิกัด 26 ช่องตรงตามมาตรฐานแถวเยื้อง (Q→P ห่าง 1u, แถว A เยื้อง 0.25u, แถว Z เยื้อง 0.75u)
 - [ ] Mutual swap เสนอเฉพาะคู่ที่ยืนยันแล้ว
 - [ ] Summary รวม = 26 และตรงกับ Slots เสมอ
 - [ ] Test cases จาก §17.1 (26/0/0, 24/2/0, 22/4/0, 25/0/1, rejected)
@@ -208,7 +238,7 @@ flowchart LR
 ### 3.D รัน Baseline
 
 - [ ] รัน Baseline บน Validation ด้วย GT corners และด้วย Corners ที่ Jitter
-- [ ] ปรับ OCR threshold, Gating, Unmatched cost **บน Validation เท่านั้น**
+- [ ] ปรับ OCR threshold, Gating, Unmatched cost, Layout fit thresholds **บน Validation เท่านั้น** (ถ้ามี Held-out validation keyboard ให้ดูผลตัวนั้นเป็นหลัก)
 - [ ] Baseline error report (แยกขั้น: Geometry / OCR / Matching)
 - [ ] ถ้า Gate G1 ตัดสินให้ใช้ Classifier สำรอง → ฝึก `YOLO11n-cls` ที่นี่ (Crop สืบทอด Split จากภาพแม่)
 
@@ -241,7 +271,8 @@ flowchart LR
 ### 4.D ประเมินและเลือก
 
 - [ ] Detection metrics: mAP@0.5, mAP@0.5:0.95, Precision, Recall
-- [ ] **ทั้ง Pipeline** (OCR + Matching + Decision เดียวกัน) บน Validation เทียบกับ Baseline
+- [ ] **ทั้ง Pipeline** (OCR + Matching + Decision เดียวกัน) บน Validation เทียบกับ Baseline แยกผลราย `keyboard_id`
+- [ ] ถ้าใช้ข้อมูลเสริมจากเว็บ (P2.B′) ให้เทียบ Detector แบบมี/ไม่มีข้อมูลเสริม
 - [ ] Latency (Warm-up / Cold start แยก), Memory บน Hardware เดียวกัน
 - [ ] เลือก Detector สุดท้ายด้วยผลทั้งระบบ + ความเร็ว + ทรัพยากร (§1) — **ถ้า Baseline ดีเท่ากันและเร็วกว่า ให้รายงานตามจริง**
 - [ ] สร้าง Model bundle: `bundle_id`, `checkpoint_hash`, `ocr_model_id`, `preprocessing_version`, `thresholds`, `dataset_version`, `split_manifest_hash`, `library_versions`, `validation_metrics`
@@ -261,7 +292,7 @@ flowchart LR
 3. [ ] **Session** — Token สุ่มใน HttpOnly cookie (Secure, SameSite), เก็บเฉพาะ Hash (`owner_session_hash`), ตรวจ Origin สำหรับ Request ที่เปลี่ยนข้อมูล
 4. [ ] **Beanie documents + Indexes** — `layouts`, `uploads`, `inspections` (Index `(owner_session_hash, created_at)`, `(status, created_at)`), `model_bundles`
 5. [ ] **Storage service** — ตั้งชื่อไฟล์เองจาก Internal ID, ไม่รับ Path จากผู้ใช้, ไม่เปิด Directory listing
-6. [ ] **Layout service** + Seed `qwerty_reference_v1` + `GET /api/v1/layouts`
+6. [ ] **Layout service** + Seed `qwerty_stagger_letters_v1` + `GET /api/v1/layouts`
 7. [ ] **Upload service** — ตรวจ Magic bytes (JPEG/PNG), Size/Pixel limits (ตั้งต้น 15 MiB / 24 MP), Decode จริง, EXIF transpose, ลบ EXIF (GPS), SHA-256, `expires_at`
    - `POST /api/v1/uploads`, `GET /uploads/{id}/image`, `DELETE /uploads/{id}` (Conflict ถ้าผูกงานแล้ว)
 8. [ ] **Inspection service** — Validate corners (ซ้ำกับ Frontend), Idempotency key / Client request ID, จำกัดงานต่อ Session และ `QUEUE_CAPACITY`
@@ -300,12 +331,13 @@ flowchart LR
 2. [ ] State machine: `idle`, `camera_permission`, `preview`, `uploading`, `calibrating`, `queued`, `processing`, `completed`, `rejected`, `failed`
 3. [ ] **`/`** — ขอบเขตที่รองรับ, วิธีถ่าย, ปุ่มถ่าย/เลือกภาพ, ชื่อ Layout (ไม่ทำ Dropdown ตัวเลือกเดียว)
 4. [ ] **`Camera` component** — `getUserMedia` + `facingMode: environment`, Fallback `<input type="file" accept="image/*" capture="environment">` เมื่อปฏิเสธสิทธิ์/ไม่มี MediaDevices, หยุด Media tracks เมื่อถ่ายเสร็จ/ออกหน้า, ส่งภาพความละเอียดเต็ม, แจ้งไม่รองรับ HEIC
-5. [ ] **`/inspect` + `CornerPicker`** — ใช้ภาพจาก Backend (หลัง EXIF) เป็นฐาน, Normalized 0–1, ลำดับ TL→TR→BR→BL, Undo/Reset, Pointer events + `touch-action: none` กันหน้าเลื่อน, Validate Quadrilateral, ล้างมุมเมื่อเปลี่ยนภาพ, ปุ่ม Submit กันกดซ้ำ + Client request ID
+5. [ ] **`/inspect` + `CornerPicker`** — ใช้ภาพจาก Backend (หลัง EXIF) เป็นฐาน, Normalized 0–1, ลำดับ TL→TR→BR→BL = กึ่งกลางช่อง Q → P → M → Z พร้อมภาพประกอบ และย้ำว่า "แตะตามตำแหน่ง ไม่ใช่ตามตัวอักษรที่เห็น", Undo/Reset, Pointer events + `touch-action: none` กันหน้าเลื่อน, Validate Quadrilateral, ล้างมุมเมื่อเปลี่ยนภาพ, ปุ่ม Submit กันกดซ้ำ + Client request ID
 6. [ ] **`/inspections/[id]`** — Poll ทุก 1–2 วินาที หยุดเมื่อจบหรือออกหน้า, แสดงชื่อขั้นตอน (ไม่แสดง % ที่ไม่ได้วัด)
 7. [ ] **`ResultOverlay`** — SVG ที่ `viewBox` ตามขนาดภาพจริง เพื่อให้ Polygon ตรงทุกขนาดจอ; สี + ไอคอน + ข้อความ (ไม่ใช้สีอย่างเดียว)
 8. [ ] **`SlotList`** — `expected_label` / `observed_label` / Reason, แตะแล้วเน้นกรอบ, Keyboard navigation
 9. [ ] Summary: แยก "ประมวลผลเสร็จ" กับ "ทุกปุ่มถูกต้อง", ไม่ประกาศ "ถูกทั้งหมด" ถ้ามี `uncertain`, แสดงคำแนะนำสลับเฉพาะที่ยืนยันได้, ปุ่มถ่ายตรวจใหม่
 10. [ ] ภาพหมดอายุ: แจ้งผู้ใช้แม้ Metadata ยังอยู่
+11. [ ] `LAYOUT_MISMATCH`: บอกให้ตรวจจุดอ้างอิงใหม่ หรือแจ้งว่าคีย์บอร์ดรุ่นนี้อาจไม่รองรับ
 
 ### 6.B UX tests (Spec §16.3)
 
@@ -338,9 +370,10 @@ flowchart LR
 - [ ] **ล็อก Config ทั้งหมด** (Model bundle, Thresholds, Layout version) และ Commit ก่อนรัน Test
 - [ ] รัน Test split **ครั้งเดียว** สำหรับ: Baseline, YOLO11n, Faster R-CNN, (SSDLite)
 - [ ] รายงาน Metrics §9.1 ครบทุกระดับ พร้อม Counts (ไม่ใช่แค่ %)
-- [ ] ชุด Robustness แยก: ภาพใช้ไม่ได้ และช่องที่ GT อ่านไม่ได้
-- [ ] Error analysis: แยกตามแสง มุม Blur ชนิดการสลับ, ตัวอย่าง FP/FN, Letter confusion matrix
-- [ ] ตอบคำถามวิจัย §2.3 ทั้งสี่ข้อ พร้อมข้อจำกัด
+- [ ] **แยก Seen keyboards / Unseen keyboards** และแยก `en_only` / `th_en` — ช่องว่างระหว่างสองกลุ่มคือคำตอบว่าใช้กับคีย์บอร์ดคนอื่นได้แค่ไหน
+- [ ] ชุด Robustness แยก: ภาพใช้ไม่ได้, ช่องที่ GT อ่านไม่ได้, Ortholinear/Split และจุดอ้างอิงผิดช่อง (Rejection rate)
+- [ ] Error analysis: แยกตามแสง มุม Blur ชนิดการสลับ และลักษณะคีย์บอร์ด (สี ฟอนต์ ตำแหน่ง Legend Profile), ตัวอย่าง FP/FN, Letter confusion matrix
+- [ ] ตอบคำถามวิจัย §2.3 ทั้งห้าข้อ พร้อมข้อจำกัด
 - [ ] ระบุชัดว่าการเปรียบเทียบใช้ Input resolution ต่างกัน = เปรียบเทียบ Configuration ไม่ใช่ Architecture ล้วน (§8.2)
 
 **Exit criteria:** รายงานผลทดสอบที่ทำซ้ำได้ อธิบายได้ว่าทำไมเลือกโมเดลสุดท้าย
@@ -374,7 +407,7 @@ flowchart LR
 | Specification และขอบเขตที่อาจารย์เห็นชอบ | ก่อน P0 |
 | Dataset + Label + Annotation guide + Split manifest | P2 |
 | Training/Evaluation scripts + Config ที่ทำซ้ำได้ | P3, P4 |
-| ผลเปรียบเทียบอย่างน้อย 2 Detector + Baseline | P4, P8 |
+| ผลเปรียบเทียบอย่างน้อย 2 Detector + Baseline แยก Seen / Unseen keyboards | P4, P8 |
 | Model bundle ที่เลือก + Model card | P4, P9 |
 | API และเว็บ Capture-to-result | P5, P6, P7 |
 | Tests: พิกัด, Assignment, Upload, การงดตอบ | P3, P5 |
@@ -390,11 +423,13 @@ flowchart LR
 | D1 | จัดการ Generator repos ใน `backend/` `frontend/` และ `keycheck/.git` ที่ซ้อน | ย้าย Generator ออก ใช้ชื่อโฟลเดอร์สำหรับแอปจริง | P0 |
 | D2 | Frontend template SPA vs SSR | SPA + Same-origin proxy | P0 |
 | D3 | Env เดียวหรือแยก Training/Serving | ตัดสินจาก Dependency spike | P0 |
-| D4 | Hardware สำหรับฝึก | ระบุ GPU/VRAM จริง | P0 |
+| D4 | Hardware สำหรับฝึก | Google Colab (สำรอง Kaggle / Colab Pro) | P0 |
 | D5 | OCR หรือ Classifier สำรอง | ตัดสินที่ Gate G1 | P1 |
-| D6 | Annotate บนภาพ Original หรือ Rectified | Original + สี่มุม แล้ว Generate Rectified | P2 |
+| D6 | Annotate บนภาพ Original หรือ Rectified | Original + จุดอ้างอิงสี่จุด แล้ว Generate Rectified | P2 |
 | D7 | เครื่องมือ Annotation | CVAT หรือ Label Studio (Export COCO) | P2 |
 | D8 | เป้าตัวเลขความแม่นยำ/เวลารอ | ตกลงหลัง Pilot + Hardware benchmark ก่อนล็อก Test (§9.3) | ปลาย P4 |
+| D9 | ขอบเขต Tier 2 (หลายรุ่น, อ่านเฉพาะอังกฤษ) | **ต้องให้อาจารย์เห็นชอบ Spec v1.1** | ก่อน P1 |
+| D10 | เลือก **Unseen test keyboards** (2–3 ตัว, Test เท่านั้น) และ **Held-out validation keyboard** (1 ตัว, Validation เท่านั้น ถ้ามีพอ) | Unseen test ต้องมี `th_en` อย่างน้อยหนึ่งตัว; ล็อกทั้งสองรายการก่อนถ่ายจริง | ต้น P2 |
 
 ## 12. ความเสี่ยงที่กระทบลำดับงาน
 
@@ -405,3 +440,6 @@ flowchart LR
 | Paddle กับ Torch ชนกัน | Worker ต้องแยก Process/Env | รู้ตั้งแต่ Dependency spike ใน P0 |
 | GPU ไม่พอ | ฝึก 960 / Faster R-CNN / 3 Seeds ไม่ทัน | เริ่ม YOLO11n 640 ก่อน, ตัด SSDLite และลด Seeds เป็นอันดับแรก |
 | Scope บาน | Must-have ไม่ครบ | ไม่แตะ Should-have จนกว่า P7 ผ่าน |
+| ยืมคีย์บอร์ดที่ถอดปุ่มได้ไม่ครบ | Dataset หลายรุ่นไม่พอ, Unseen test อ่อน | เริ่มติดต่อตั้งแต่สัปดาห์ 1; ใช้คีย์บอร์ดห้องแล็บเป็นภาพถูกทั้งหมด; ขั้นต่ำ Unseen 2 ตัว |
+| OCR แย่บนปุ่มไทย-อังกฤษ | Tier 2 ใช้ได้ไม่เต็ม | รู้ตั้งแต่ Gate G1; ถ้าแก้ไม่ได้ ลดขอบเขตเป็น `en_only` พร้อมเหตุผล |
+| Colab Runtime หลุด / GPU ไม่ว่าง | การฝึกช้ากว่าแผน | Checkpoint + Resume ลง Drive, สำรอง Kaggle |
