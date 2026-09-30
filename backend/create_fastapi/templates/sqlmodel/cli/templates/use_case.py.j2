@@ -1,0 +1,37 @@
+"""
+{{ pascal_case }} use case - business logic and data access
+Simplified pattern using BaseUseCase for common CRUD operations
+"""
+
+from fastapi import Depends
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from .model import {{ pascal_case }}
+from .schemas import Create{{ pascal_case }}, Update{{ pascal_case }}, {{ pascal_case }}Response
+from ...core.base_use_case import BaseUseCase
+from ...infrastructure.database import get_db_session
+
+
+class {{ pascal_case }}UseCase(BaseUseCase[{{ pascal_case }}, Create{{ pascal_case }}, Update{{ pascal_case }}, {{ pascal_case }}Response]):
+    """
+    {{ pascal_case }} use case handling both business logic and data access.
+    Inherits common CRUD operations from BaseUseCase.
+    """
+
+    model = {{ pascal_case }}
+    response_schema = {{ pascal_case }}Response
+
+    # Add custom business logic here if needed
+    # Example:
+    # async def custom_method(self, param: str) -> Optional[{{ pascal_case }}Response]:
+    #     from sqlmodel import select
+    #     statement = select({{ pascal_case }}).where({{ pascal_case }}.field == param)
+    #     result = await self.session.exec(statement)
+    #     {{ feature_name }} = result.first()
+    #     return self._to_response({{ feature_name }}) if {{ feature_name }} else None
+
+
+# Dependency injection
+def get_{{ feature_name }}_use_case(session: AsyncSession = Depends(get_db_session)) -> {{ pascal_case }}UseCase:
+    """Get {{ pascal_case }}UseCase instance"""
+    return {{ pascal_case }}UseCase(session)

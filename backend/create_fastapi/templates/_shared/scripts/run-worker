@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+APP_ENV=dev uv run arq apiapp.worker.server.WorkerSettings

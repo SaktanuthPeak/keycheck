@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+APP_ENV=dev uv run python -m apiapp.cmd.controller

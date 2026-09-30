@@ -1,0 +1,21 @@
+"""
+{{ pascal_case }} SQLModel document model
+"""
+
+from sqlmodel import Field
+from typing import Optional
+from .schemas import Base{{ pascal_case }}
+from ...core.base_model import BaseSQLModel
+
+
+class {{ pascal_case }}(Base{{ pascal_case }}, BaseSQLModel, table=True):
+    """
+    {{ pascal_case }} model for PostgreSQL
+    """
+    __tablename__ = "{{ feature_name }}s"
+
+    # Add indexed fields here if needed
+    # example: name: str = Field(index=True, unique=True)
+
+    def __str__(self) -> str:
+        return f"{{ pascal_case }}(id={self.id})"

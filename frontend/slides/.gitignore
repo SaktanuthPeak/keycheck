@@ -1,0 +1,17 @@
+# Slidev decks — commit sources only, everything below is regenerable
+
+# dependencies
+node_modules/
+
+# build output (slidev build)
+dist/
+
+# Slidev cache / temp
+.slidev/
+.vite-inspect/
+components.d.ts
+
+# exports (slidev export)
+*.pdf
+*.pptx
+*-export/

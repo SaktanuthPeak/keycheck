@@ -1,0 +1,55 @@
+"""
+{{ pascal_case }} module schemas (DTOs)
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime, timezone
+
+from ...core.base_schemas import BaseSchema
+
+
+class Base{{ pascal_case }}(BaseModel):
+    """Base schema with common fields for {{ feature_name }}"""
+
+    name: str = Field(
+        ..., min_length=1, max_length=100, description="Name of the {{ feature_name }}"
+    )
+    description: Optional[str] = Field(
+        default=None, max_length=500, description="Description of the {{ feature_name }}"
+    )
+    is_active: bool = Field(default=True, description="Indicates if the {{ feature_name }} is active")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Creation timestamp",
+    )
+
+
+class Create{{ pascal_case }}(BaseModel):
+    """Schema for creating a new {{ feature_name }}"""
+
+    name: str = Field(
+        ..., min_length=1, max_length=100, description="Name of the {{ feature_name }}"
+    )
+    description: Optional[str] = Field(
+        default=None, max_length=500, description="Description of the {{ feature_name }}"
+    )
+
+
+class Update{{ pascal_case }}(BaseModel):
+    """Schema for updating {{ feature_name }} data - all fields optional"""
+
+    name: Optional[str] = Field(
+        default=None, min_length=1, max_length=100, description="Name of the {{ feature_name }}"
+    )
+    description: Optional[str] = Field(
+        default=None, max_length=500, description="Description of the {{ feature_name }}"
+    )
+    is_active: Optional[bool] = Field(
+        default=None, description="Indicates if the {{ feature_name }} is active"
+    )
+
+
+class {{ pascal_case }}Response(BaseSchema, Base{{ pascal_case }}):
+    """Response schema for {{ feature_name }}"""
+    pass
