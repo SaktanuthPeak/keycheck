@@ -1,0 +1,35 @@
+# KeyCheck Colab requirements (colab-notebook-plan §4 step 3: install from this file in every notebook).
+#
+# STATUS: version RANGES, not final pins. NB00 (00_env_check.ipynb) must be run on a real Colab GPU runtime to
+# confirm the combination below and then replace each range with `==` pins (plan §2.3, Spec §14.2).
+#
+# What was actually verified so far (CPU only, local venv, Python 3.13.15, Linux x86_64):
+#   torch 2.14.1+cpu   torchvision 0.29.1+cpu   ultralytics 8.4.170   paddlepaddle 3.3.1   paddleocr 3.7.0 (paddlex 3.7.2)
+#   numpy 2.3.5   scipy 1.18.1   pyyaml 6.0.2   pydantic 2.13.5   pillow 12.3.0   opencv-contrib-python 4.10.0.84
+# torch + torchvision + ultralytics + paddle + paddleocr imported and ran in ONE environment without conflicts;
+# YOLO11n and Faster R-CNN smoke trainings (incl. resume) passed on CPU with that set.
+# NOT verified: CUDA builds, Colab's own Python (likely 3.12) and its preinstalled torch/opencv/numpy.
+#
+# Colab notes for NB00 to check:
+#  * Colab ships a CUDA build of torch/torchvision. Do NOT reinstall torch from PyPI there unless NB00 shows a
+#    version conflict; install only the ranges below that are missing or too old.
+#  * OpenCV: ultralytics pulls opencv-python, paddlex pulls opencv-contrib-python==4.10.0.84, ai/pyproject wants
+#    opencv-python-headless. Several wheels owning the same `cv2` package overwrite each other; locally the
+#    last installed (contrib 4.10) won and everything worked. Pick ONE distribution when pinning.
+#  * Installing paddlepaddle/paddleocr may change numpy/opencv versions; re-run the import check after it.
+
+numpy>=1.26,<2.4
+scipy>=1.11
+pyyaml>=6.0
+pydantic>=2.5
+pillow>=10.0
+opencv-contrib-python>=4.10,<4.11   # matches paddlex's exact requirement; headless/other wheels conflict (see above)
+
+# Detector training
+torch>=2.3
+torchvision>=0.18
+ultralytics>=8.3,<8.5
+
+# OCR (PP-OCRv5)
+paddlepaddle>=3.0,<3.4     # CPU wheel locally; Colab GPU runtime may need paddlepaddle-gpu, decide in NB00
+paddleocr>=3.0,<3.8

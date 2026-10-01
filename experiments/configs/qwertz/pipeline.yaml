@@ -1,0 +1,105 @@
+# Single source of truth for notebooks/keycheck_qwertz_pipeline.ipynb (plan §4.1). Values here, not in the notebook.
+dataset_version: kaggle_qwertz_v1
+layout_id: qwertz_letters_eval_v1        # S1/S3/S4 expected labels; S2 uses qwerty_stagger_letters_v1
+swap_layout_id: qwerty_stagger_letters_v1
+
+q1:
+  seed: 20261001            # changes split_manifest_hash
+  test_fraction: 0.15
+  val_fraction: 0.15
+  n_heldout_val_groups: 2
+  heldout_min_eligible: 8
+  heldout_max_eligible: 40
+q2:
+  train_jitter_variants: 2      # jittered variants per train image, on top of the exact-GT canvas
+  jitter_sigmas_u: [0.05, 0.10, 0.20]
+  eval_jitter_sigma_u: 0.10     # fixed (seeded) jitter used for the Val/Test `jit` point set
+  min_visible: 0.5
+  swap_kinds: [adjacent, cross_row, multi_pairs, cycle3]
+  ppus: [64, 96, 128]
+smoke:
+  max_sources: 50
+  epochs: 1
+
+# ---------------- Q3: OCR sweep (Val, S1, GT points) ----------------
+q3:
+  max_items: 40                 # source images per px_per_unit; null = all
+  max_reject_rate: 0.10         # choose highest accuracy among combos with reject rate <= this
+  device: "gpu:0"               # paddle device ("cpu" if the GPU build is unavailable)
+  crop_modes: [key_full, key_full_pad0.1, key_center_0.7, key_center_0.55]
+  recognizers:
+    - {id: rec_server, mode: rec, rec_model: PP-OCRv5_server_rec, pad_px: 8}
+    - {id: rec_en_mobile, mode: rec, rec_model: en_PP-OCRv5_mobile_rec, pad_px: 0}
+    - {id: rec_latin_mobile, mode: rec, rec_model: latin_PP-OCRv5_mobile_rec, pad_px: 8}
+    - {id: auto_server, mode: auto, rec_model: PP-OCRv5_server_rec, det_model: PP-OCRv5_server_det, pad_px: 8}
+
+# ---------------- Q4: YOLO11n (Spec §5.6: no flips / mosaic / mixup) ----------------
+q4:
+  model: {weights: yolo11n.pt}
+  train:
+    epochs: 100
+    patience: 15
+    imgsz: 640                  # also try 960 (batch 8) as a separate configuration
+    batch: 16
+    workers: 4
+    rect: true
+    optimizer: auto
+    cos_lr: false
+    amp: true
+    cache: false
+    plots: true
+    deterministic: true
+    max_det: 300                # must cover every visible key (Spec §7.3)
+    device: null
+  augment: {hsv_h: 0.015, hsv_s: 0.4, hsv_v: 0.3, degrees: 1.5, translate: 0.03, scale: 0.1}
+
+# ---------------- Q5: Faster R-CNN ResNet50-FPN V2 ----------------
+q5:
+  model: {pretrained: true, min_size: 480, max_size: 1152, box_score_thresh: 0.05, box_nms_thresh: 0.5, box_detections_per_img: 300}
+  train:
+    epochs: 50
+    patience: 10
+    batch: 2                    # RTX 4060 8 GB; effective batch = batch * accumulate
+    accumulate: 4
+    workers: 4
+    optimizer: sgd
+    lr: 0.01
+    momentum: 0.9
+    weight_decay: 0.0005
+    warmup_iters: 100
+    grad_clip: 10.0
+    amp: true
+    monitor: map50_95
+    val_score_thr: 0.25
+    device: null
+  augment: {brightness: 0.25, contrast: 0.25, noise_std: 0.02, blur_prob: 0.2, scale: 0.08, translate: 0.03, rotate_deg: 1.5}
+
+# ---------------- Q6: pipeline eval / tuning (Validation only) ----------------
+q6:
+  detectors: [baseline, yolo, frcnn]
+  max_items_per_scenario: null  # null = all; smoke uses a few
+  evidence_gating_u: 0.75       # OCR only on detections within this distance of a slot centre
+  evidence_det_floor: 0.05
+  default_params:
+    det_score_min: 0.25
+    ocr_score_min: 0.50
+    gating_u: 0.50
+    unmatched_cost: 0.60
+    ambiguity_margin_u: 0.10
+    fit_min_matched_fraction: null
+    fit_max_mean_residual_u: null
+    ref_invalid_max: 2
+  tuning:
+    max_combos: 400
+    max_false_alarm: 0.02       # S1 false-alarm image-rate bound
+    max_false_rejection: 0.02   # S1 rejected-good-board bound
+    w_layout: 0.25              # reward for rejecting S4a with LAYOUT_MISMATCH
+    grid:
+      det_score_min: [0.10, 0.25, 0.40, 0.55]
+      ocr_score_min: [0.30, 0.50, 0.70, 0.85]
+      gating_u: [0.40, 0.50, 0.60, 0.70]
+      unmatched_cost: [0.50, 0.60, 0.80]
+      ambiguity_margin_u: [0.05, 0.10, 0.15]
+      fit_min_matched_fraction: [0.60, 0.70, 0.80]
+      fit_max_mean_residual_u: [0.15, 0.20, 0.30]
+      ref_invalid_max: [null, 1, 2, 3]

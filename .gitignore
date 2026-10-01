@@ -37,3 +37,11 @@ experiments/**/runs/
 .DS_Store
 .vscode/
 .idea/
+datasets/
+# Extra local environments
+.venv*/
+# Pipeline outputs (checkpoints, reports, rectified datasets)
+outputs/
+
+# Pipeline outputs (plan §4.2)
+outputs/

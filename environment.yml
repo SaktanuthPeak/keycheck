@@ -1,0 +1,12 @@
+# Local env for the pipeline (plan §4.5). Prefer Python 3.11/3.12; check Paddle wheels before using 3.13.
+name: keycheck-ml
+channels: [conda-forge]
+dependencies:
+  - python=3.12
+  - pip
+  - jupyterlab
+  - ipykernel
+  - pandas
+  - matplotlib
+  - pip:
+      - -r requirements-colab.txt     # same pins as Colab; install a CUDA torch build first if pip picks the CPU wheel

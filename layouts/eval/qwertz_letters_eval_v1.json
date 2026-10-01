@@ -1,0 +1,469 @@
+{
+  "layout_id": "qwertz_letters_eval_v1",
+  "version": 1,
+  "name": "QWERTZ letter block, internal evaluation only (Y/Z swapped)",
+  "supported_form_factors": [
+    "ANSI",
+    "ISO"
+  ],
+  "internal_only": true,
+  "unit": "u",
+  "px_per_unit": 96,
+  "margin_u": 1.5,
+  "key_pitch": 1.0,
+  "reference_points_definition": {
+    "order": [
+      "TL",
+      "TR",
+      "BR",
+      "BL"
+    ],
+    "slot_ids": [
+      "r0c0",
+      "r0c9",
+      "r2c6",
+      "r2c0"
+    ],
+    "points_u": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        9.0,
+        0.0
+      ],
+      [
+        6.75,
+        2.0
+      ],
+      [
+        0.75,
+        2.0
+      ]
+    ]
+  },
+  "fit_thresholds": {
+    "gating_u": 0.5,
+    "min_matched_fraction": 0.7,
+    "max_mean_residual_u": 0.3
+  },
+  "slots": [
+    {
+      "slot_id": "r0c0",
+      "row": 0,
+      "col": 0,
+      "expected_label": "Q",
+      "center_u": [
+        0.0,
+        0.0
+      ],
+      "region_u": [
+        -0.45,
+        -0.45,
+        0.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c1",
+      "row": 0,
+      "col": 1,
+      "expected_label": "W",
+      "center_u": [
+        1.0,
+        0.0
+      ],
+      "region_u": [
+        0.55,
+        -0.45,
+        1.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c2",
+      "row": 0,
+      "col": 2,
+      "expected_label": "E",
+      "center_u": [
+        2.0,
+        0.0
+      ],
+      "region_u": [
+        1.55,
+        -0.45,
+        2.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c3",
+      "row": 0,
+      "col": 3,
+      "expected_label": "R",
+      "center_u": [
+        3.0,
+        0.0
+      ],
+      "region_u": [
+        2.55,
+        -0.45,
+        3.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c4",
+      "row": 0,
+      "col": 4,
+      "expected_label": "T",
+      "center_u": [
+        4.0,
+        0.0
+      ],
+      "region_u": [
+        3.55,
+        -0.45,
+        4.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c5",
+      "row": 0,
+      "col": 5,
+      "expected_label": "Z",
+      "center_u": [
+        5.0,
+        0.0
+      ],
+      "region_u": [
+        4.55,
+        -0.45,
+        5.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c6",
+      "row": 0,
+      "col": 6,
+      "expected_label": "U",
+      "center_u": [
+        6.0,
+        0.0
+      ],
+      "region_u": [
+        5.55,
+        -0.45,
+        6.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c7",
+      "row": 0,
+      "col": 7,
+      "expected_label": "I",
+      "center_u": [
+        7.0,
+        0.0
+      ],
+      "region_u": [
+        6.55,
+        -0.45,
+        7.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c8",
+      "row": 0,
+      "col": 8,
+      "expected_label": "O",
+      "center_u": [
+        8.0,
+        0.0
+      ],
+      "region_u": [
+        7.55,
+        -0.45,
+        8.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r0c9",
+      "row": 0,
+      "col": 9,
+      "expected_label": "P",
+      "center_u": [
+        9.0,
+        0.0
+      ],
+      "region_u": [
+        8.55,
+        -0.45,
+        9.45,
+        0.45
+      ]
+    },
+    {
+      "slot_id": "r1c0",
+      "row": 1,
+      "col": 0,
+      "expected_label": "A",
+      "center_u": [
+        0.25,
+        1.0
+      ],
+      "region_u": [
+        -0.2,
+        0.55,
+        0.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c1",
+      "row": 1,
+      "col": 1,
+      "expected_label": "S",
+      "center_u": [
+        1.25,
+        1.0
+      ],
+      "region_u": [
+        0.8,
+        0.55,
+        1.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c2",
+      "row": 1,
+      "col": 2,
+      "expected_label": "D",
+      "center_u": [
+        2.25,
+        1.0
+      ],
+      "region_u": [
+        1.8,
+        0.55,
+        2.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c3",
+      "row": 1,
+      "col": 3,
+      "expected_label": "F",
+      "center_u": [
+        3.25,
+        1.0
+      ],
+      "region_u": [
+        2.8,
+        0.55,
+        3.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c4",
+      "row": 1,
+      "col": 4,
+      "expected_label": "G",
+      "center_u": [
+        4.25,
+        1.0
+      ],
+      "region_u": [
+        3.8,
+        0.55,
+        4.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c5",
+      "row": 1,
+      "col": 5,
+      "expected_label": "H",
+      "center_u": [
+        5.25,
+        1.0
+      ],
+      "region_u": [
+        4.8,
+        0.55,
+        5.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c6",
+      "row": 1,
+      "col": 6,
+      "expected_label": "J",
+      "center_u": [
+        6.25,
+        1.0
+      ],
+      "region_u": [
+        5.8,
+        0.55,
+        6.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c7",
+      "row": 1,
+      "col": 7,
+      "expected_label": "K",
+      "center_u": [
+        7.25,
+        1.0
+      ],
+      "region_u": [
+        6.8,
+        0.55,
+        7.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r1c8",
+      "row": 1,
+      "col": 8,
+      "expected_label": "L",
+      "center_u": [
+        8.25,
+        1.0
+      ],
+      "region_u": [
+        7.8,
+        0.55,
+        8.7,
+        1.45
+      ]
+    },
+    {
+      "slot_id": "r2c0",
+      "row": 2,
+      "col": 0,
+      "expected_label": "Y",
+      "center_u": [
+        0.75,
+        2.0
+      ],
+      "region_u": [
+        0.3,
+        1.55,
+        1.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c1",
+      "row": 2,
+      "col": 1,
+      "expected_label": "X",
+      "center_u": [
+        1.75,
+        2.0
+      ],
+      "region_u": [
+        1.3,
+        1.55,
+        2.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c2",
+      "row": 2,
+      "col": 2,
+      "expected_label": "C",
+      "center_u": [
+        2.75,
+        2.0
+      ],
+      "region_u": [
+        2.3,
+        1.55,
+        3.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c3",
+      "row": 2,
+      "col": 3,
+      "expected_label": "V",
+      "center_u": [
+        3.75,
+        2.0
+      ],
+      "region_u": [
+        3.3,
+        1.55,
+        4.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c4",
+      "row": 2,
+      "col": 4,
+      "expected_label": "B",
+      "center_u": [
+        4.75,
+        2.0
+      ],
+      "region_u": [
+        4.3,
+        1.55,
+        5.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c5",
+      "row": 2,
+      "col": 5,
+      "expected_label": "N",
+      "center_u": [
+        5.75,
+        2.0
+      ],
+      "region_u": [
+        5.3,
+        1.55,
+        6.2,
+        2.45
+      ]
+    },
+    {
+      "slot_id": "r2c6",
+      "row": 2,
+      "col": 6,
+      "expected_label": "M",
+      "center_u": [
+        6.75,
+        2.0
+      ],
+      "region_u": [
+        6.3,
+        1.55,
+        7.2,
+        2.45
+      ]
+    }
+  ]
+}
