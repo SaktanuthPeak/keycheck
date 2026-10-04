@@ -24,7 +24,7 @@ def build_args(cfg: dict, data_yaml: str, project: Path, seed: int, smoke: bool)
 def train_yolo(out_dir: Path, *, data_yaml: str | Path, cfg: dict, seed: int = 0, smoke: bool = False) -> dict:
     from ultralytics import YOLO
     out_dir.mkdir(parents=True, exist_ok=True)
-    project = out_dir / "runs"
+    project = (out_dir / "runs").resolve()        # Ultralytics nests a relative project under runs/<task>/
     args = build_args(cfg, str(data_yaml), project, seed, smoke)
     last = project / "train" / "weights" / "last.pt"
     t0, resumed = time.time(), False
