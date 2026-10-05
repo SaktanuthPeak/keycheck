@@ -1,0 +1,48 @@
+selected_detector: yolo
+px_per_unit: 64
+crop_mode: key_full
+recognizer:
+  id: keycls
+  mode: keycls
+  weights: outputs/pipeline/qwertz_v1/q3b_keycls/checkpoints/best.pt
+  weights_sha256: 5ff0e74163203c1b464348d1d997bb22f7fffa5232d9d39e3dc013a6aad6845b
+detectors:
+  baseline:
+    det_score_min: 0.25
+    ocr_score_min: 0.99
+    gating_u: 0.5
+    unmatched_cost: 0.6
+    ambiguity_margin_u: 0.1
+    fit_min_matched_fraction: null
+    fit_max_mean_residual_u: null
+    ref_invalid_max: 2
+    mismatch_min_wrong: 2
+    mismatch_wrong_fraction: 0.5
+    skip_layout_fit: true
+    objective: 1.2567831537962206
+  yolo:
+    det_score_min: 0.1
+    ocr_score_min: 0.99
+    gating_u: 0.6
+    unmatched_cost: 0.6
+    ambiguity_margin_u: 0.15
+    fit_min_matched_fraction: 0.6
+    fit_max_mean_residual_u: 0.3
+    ref_invalid_max: null
+    mismatch_min_wrong: 3
+    mismatch_wrong_fraction: 0.5
+    skip_layout_fit: false
+    objective: 1.300734670534341
+  frcnn:
+    det_score_min: 0.25
+    ocr_score_min: 0.99
+    gating_u: 0.6
+    unmatched_cost: 0.6
+    ambiguity_margin_u: 0.05
+    fit_min_matched_fraction: 0.6
+    fit_max_mean_residual_u: 0.3
+    ref_invalid_max: 2
+    mismatch_min_wrong: 3
+    mismatch_wrong_fraction: 0.5
+    skip_layout_fit: false
+    objective: 1.2245324931546457
