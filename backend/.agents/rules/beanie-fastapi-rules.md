@@ -1,0 +1,60 @@
+---
+trigger: always_on
+---
+
+# AI Instructions for FastAPI + Beanie ODM
+
+This project uses a Custom Clean Architecture with Domain-Driven Design (DDD) for a FastAPI backend, paired with Beanie ODM (MongoDB), and is intended to be used with a SvelteKit frontend.
+
+You are an expert AI assistant tasked with helping developers build features according to the exact architecture.
+
+## 🏗️ 1. Architecture Rules
+
+1. **Modules Path**: All features must be stored in `apiapp/modules/{feature_name}`.
+2. **Missing Repository**: The project uses a UseCase-only structure combining Business Logic and Data Access Layer. There is NO `repository.py` layer.
+3. **Beanie Operations**: Use `self.model` directly in the `UseCase` for ANY database operation.
+4. **NO CROSS-MODULE IMPORTS**: Do not import `Model` directly. You can only import another module's `UseCase` for dependency injection.
+
+## 🛠️ 2. Development Workflow (Crucial)
+
+- **Always use the CLI to generate modules**: `poetry run forge generate {feature_name}`. NEVER try to write `__init__.py`, `router.py`, `model.py`, `schemas.py`, and `use_case.py` from scratch. The CLI will handle everything.
+- **Run the app**: Activate the virtual environment (`source venv/bin/activate` or equivalent) and run the development script: `./scripts/run-dev`.
+
+## 📂 3. File Constraints
+
+When editing a feature module:
+- **`model.py`**: Define `beanie.Document`. No logic allowed here.
+- **`schemas.py`**: Pydantic models with `Create`, `Update`, `Response` variants. Do NOT put business logic here.
+- **`use_case.py`**: The central place for business validations, error raising (`BusinessLogicError`), AND data access (Beanie operations).
+- **`router.py`**: FastAPI endpoints ONLY. Use `Depends()` to inject the UseCase. Do not query the DB or apply business logic here.
+
+## ⚛️ 4. SvelteKit (Frontend) Compatibility
+
+This project acts as an API provider. Ensure all API responses:
+- Return clear JSON objects or `fastapi-pagination`'s `Page`.
+- Follow consistent error structures (standard FastAPI HTTPExceptions + BusinessLogicErrors).
+- Export clean OpenAPI definitions so frontend code-generators (like `openapi-typescript-codegen`) can interpret `schemas.py` correctly.
+
+## 📌 5. Code Style
+
+- Double quotes for strings `""`
+- Use fully descriptive typing (e.g. `list[User]`, `User | None`)
+- Never use PyMongo raw syntax like `collection.find({"foo": "bar"})`. Use Beanie operators (`self.model.find(self.model.foo == "bar")`).
+- Name variables using `snake_case`.
+
+## 📦 6. Package Management & Dependencies
+
+- **Strictly Poetry:** Whenever a new Python library or dependency needs to be installed, you MUST use `poetry add <package_name>`. For development tools, use `poetry add --group dev <package_name>`.
+- **NO PIP:** Never instruct the user to use `pip install` or manually modify `requirements.txt`. The project strictly relies on `pyproject.toml` and `poetry.lock`.
+
+## 🚀 7. Running The App
+
+Always run the app using the provided scripts after activating your virtual environment.
+```bash
+- 1. Activate Virtual Environment
+source venv/bin/activate
+- 2. Run in Development Mode
+./scripts/run-dev
+
+
+If you receive a request to alter or update something, strictly enforce the rules above.
