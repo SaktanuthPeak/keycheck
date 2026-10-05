@@ -9,15 +9,19 @@ from dataclasses import dataclass
 
 import numpy as np
 
-_LATIN_A_Z = re.compile(r"^[A-Z]$")
+_LATIN_A_Z = re.compile(r"^[A-Za-z]$")         # ASCII only: "ı".upper() == "I" must not count
+_THAI_OR_SPACE = re.compile(r"[\u0E00-\u0E7F\s]+")
 
 
 def normalize_label(text: str | None) -> str | None:
-    """Uppercase/trim; return a single Latin A–Z letter or None (invalid)."""
+    """Drop Thai characters and whitespace, uppercase; return a single Latin A–Z letter or None (invalid).
+
+    Thai-English keycaps read as e.g. "Aฟ" -> "A". Two Latin letters ("AS") or any other symbol ("Q@", "0") -> None.
+    """
     if not text:
         return None
-    t = text.strip().upper()
-    return t if _LATIN_A_Z.match(t) else None
+    t = _THAI_OR_SPACE.sub("", text)
+    return t.upper() if _LATIN_A_Z.fullmatch(t) else None
 
 
 def crop_box_px(canvas: np.ndarray, box_px, mode: str) -> np.ndarray:
