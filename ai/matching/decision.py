@@ -19,6 +19,8 @@ class Params:
     fit_min_matched_fraction: float | None = None      # None -> layout fit_thresholds
     fit_max_mean_residual_u: float | None = None
     ref_invalid_max: int | None = 2                    # reject when this many of the 4 tapped slots read as non-letters
+    mismatch_min_wrong: int | None = None              # reject when >= this many confident reads disagree with their slot...
+    mismatch_wrong_fraction: float = 0.5               # ...and they are more than this share of all confident reads (shifted taps)
     skip_layout_fit: bool = False                      # Baseline (fixed crops) cannot test the key grid
 
     def to_dict(self):
@@ -86,6 +88,11 @@ def decide(ev: Evidence, layout: Layout, p: Params) -> dict:
                 s["reason"] = "label_match" if s["status"] == "correct" else "label_mismatch"
         slots[sid] = s
     summary = {k: sum(1 for s in slots.values() if s["status"] == k) for k in ("correct", "incorrect", "uncertain")}
+    # Taps shifted by a key make most confident reads wrong at once; real swaps leave most of them right.
+    fit["wrong_reads"] = summary["incorrect"]
+    if (p.mismatch_min_wrong is not None and summary["incorrect"] >= p.mismatch_min_wrong
+            and summary["incorrect"] > p.mismatch_wrong_fraction * (summary["correct"] + summary["incorrect"])):
+        return {"status": "rejected", "error_code": "LAYOUT_MISMATCH", "fit": fit, "slots": {}, "summary": None, "suggestions": []}
     summary["total_slots"] = n
     return {"status": "completed", "error_code": None, "fit": fit, "slots": slots, "summary": summary,
             "suggestions": suggest(slots, layout)}

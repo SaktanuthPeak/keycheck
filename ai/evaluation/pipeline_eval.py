@@ -85,9 +85,12 @@ def objective(overall: dict, tcfg: dict) -> float:
     fa = s1.get("false_alarm_image_rate", 0.0)
     frj = s1.get("rejection_rate", 0.0)
     nz = lambda x: 0.0 if x != x else x
-    pen = max(0.0, nz(fa) - tcfg["max_false_alarm"]) + max(0.0, nz(frj) - tcfg["max_false_rejection"])
+    lm = nz(s4a.get("layout_mismatch_rate", 0.0))
+    # S4a is a floor, not only a reward: otherwise tuning can buy S1 false-alarm room by switching the layout check off.
+    pen = (max(0.0, nz(fa) - tcfg["max_false_alarm"]) + max(0.0, nz(frj) - tcfg["max_false_rejection"])
+           + max(0.0, tcfg.get("min_layout_mismatch", 0.0) - lm))
     f1 = np.mean([nz(s2.get("incorrect_f1", 0.0)), nz(s3.get("incorrect_f1", 0.0))])
-    val = f1 + tcfg["w_layout"] * nz(s4a.get("layout_mismatch_rate", 0.0)) + 0.1 * nz(s1.get("coverage", 0.0))
+    val = f1 + tcfg["w_layout"] * lm + 0.1 * nz(s1.get("coverage", 0.0))
     return float(val - 10.0 * pen)
 
 

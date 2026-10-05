@@ -130,11 +130,14 @@ q6:
     fit_min_matched_fraction: null
     fit_max_mean_residual_u: null
     ref_invalid_max: 2
+    mismatch_min_wrong: 3 # LAYOUT_MISMATCH when >= 3 confident reads are wrong...
+    mismatch_wrong_fraction: 0.5 # ...and they are > 50% of confident reads (Q6 val: S4a 91%, S1/S2 0%)
   tuning:
     max_combos: 400
     max_false_alarm: 0.02 # S1 false-alarm image-rate bound
     max_false_rejection: 0.02 # S1 rejected-good-board bound
     w_layout: 0.25 # reward for rejecting S4a with LAYOUT_MISMATCH
+    min_layout_mismatch: 0.80 # S4a floor, so tuning cannot switch the layout check off
     grid:
       det_score_min: [0.10, 0.25, 0.40, 0.55]
       ocr_score_min: [0.30, 0.50, 0.70, 0.85]
@@ -144,3 +147,4 @@ q6:
       fit_min_matched_fraction: [0.60, 0.70, 0.80]
       fit_max_mean_residual_u: [0.15, 0.20, 0.30]
       ref_invalid_max: [null, 1, 2, 3]
+      mismatch_min_wrong: [2, 3, 4]

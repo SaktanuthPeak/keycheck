@@ -103,7 +103,7 @@ def run_q6(out_dir: Path, *, q1_dir: Path, q2_dir: Path, q3_dir: Path, q4_dir: P
         grid_cfg = {**q6["tuning"]}
         if smoke:
             grid_cfg["grid"] = {k: v[:2] for k, v in grid_cfg["grid"].items()}
-        best, best_s, hist = PE.tune(scen, cache, layouts, base, grid_cfg, restrict=["ocr_score_min", "ref_invalid_max"] if is_base else None, skip_layout_fit=is_base)
+        best, best_s, hist = PE.tune(scen, cache, layouts, base, grid_cfg, restrict=["ocr_score_min", "ref_invalid_max", "mismatch_min_wrong"] if is_base else None, skip_layout_fit=is_base)
         params = PE.make_params(base, best, is_base)
         rep1, _ = PE.evaluate(scen, cache, layouts, params)
         thresholds[name] = {**params.to_dict(), "objective": best_s}
