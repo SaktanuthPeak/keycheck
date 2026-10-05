@@ -1,0 +1,32 @@
+"""
+{{ pascal_case }} use case - business logic and data access
+Simplified pattern using BaseUseCase for common CRUD operations
+"""
+
+from .model import {{ pascal_case }}
+from .schemas import Create{{ pascal_case }}, Update{{ pascal_case }}, {{ pascal_case }}Response
+from ...core.base_use_case import BaseUseCase
+from fastapi_pagination import Page
+
+
+class {{ pascal_case }}UseCase(BaseUseCase[{{ pascal_case }}, Create{{ pascal_case }}, Update{{ pascal_case }}, {{ pascal_case }}Response]):
+    """
+    {{ pascal_case }} use case handling both business logic and data access.
+    Inherits common CRUD operations from BaseUseCase.
+    """
+
+    model = {{ pascal_case }}
+    response_schema = {{ pascal_case }}Response
+
+    # Add custom business logic here if needed
+    # Example:
+    # async def custom_method(self, param: str) -> Optional[{{ pascal_case }}Response]:
+    #     """Custom business logic"""
+    #     {{ feature_name }} = await {{ pascal_case }}.find_one({"field": param})
+    #     return self._to_response({{ feature_name }}) if {{ feature_name }} else None
+
+
+# Dependency injection
+def get_{{ feature_name }}_use_case() -> {{ pascal_case }}UseCase:
+    """Get {{ pascal_case }}UseCase instance"""
+    return {{ pascal_case }}UseCase()
