@@ -190,3 +190,16 @@ def test_low_detector_score_dropped(layout):
     sc[layout.index("r0c4")] = 0.1
     r = decide(ev_from(layout, score=sc), layout, DETECTOR)
     assert r["slots"]["r0c4"]["reason"] == "detection_unavailable"
+
+
+def test_low_confidence_read_kept_as_candidate_only(layout):
+    ocr = np.full(26, 0.95)
+    ocr[layout.index("r1c5")] = 0.4                            # H read as H, but below ocr_score_min
+    ocr[layout.index("r1c6")] = 0.4                            # J read as K, below ocr_score_min
+    r = decide(ev_from(layout, with_letters(layout, {"r1c6": "K"}), ocr=ocr), layout, DETECTOR)
+    check_summary(r)
+    h, j = r["slots"]["r1c5"], r["slots"]["r1c6"]
+    assert (h["status"], h["reason"], h["observed_label"], h["candidate_label"]) == ("uncertain", "ocr_low_confidence", None, "H")
+    assert (j["status"], j["candidate_label"]) == ("uncertain", "K")      # a hint, never an `incorrect`
+    assert r["summary"]["incorrect"] == 0 and r["suggestions"] == []
+    assert all(s["candidate_label"] is None for k, s in r["slots"].items() if k not in ("r1c5", "r1c6"))

@@ -141,6 +141,7 @@ function buildSlots(points: Quad, sc: Scenario): { slots: Slot[]; suggestions: S
 			return {
 				...base,
 				observed_label: swaps[s.slot_id],
+				candidate_label: null,
 				status: 'incorrect',
 				reason: 'label_mismatch',
 				reason_codes: ['label_mismatch'],
@@ -155,12 +156,14 @@ function buildSlots(points: Quad, sc: Scenario): { slots: Slot[]; suggestions: S
 				status: 'uncertain',
 				reason,
 				reason_codes: [reason],
-				ocr_score: reason === 'ocr_low_confidence' ? 0.31 : null
+				candidate_label: reason === 'ocr_low_confidence' ? s.expected_label : null,
+				ocr_score: reason === 'ocr_low_confidence' ? 0.93 : null
 			};
 		}
 		return {
 			...base,
 			observed_label: s.expected_label,
+			candidate_label: null,
 			status: 'correct',
 			reason: 'label_match',
 			reason_codes: ['label_match'],

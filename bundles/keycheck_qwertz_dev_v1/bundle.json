@@ -1,0 +1,37 @@
+{
+ "bundle_id": "keycheck_qwertz_dev_v1",
+ "commit": "bdf7b9ae1c66c4149c6408e4a1a908ac021fe613",
+ "crop_mode": "key_full",
+ "detector": "yolo",
+ "detector_config": {
+  "imgsz": 640
+ },
+ "layouts": [
+  "qwertz_letters_eval_v1",
+  "qwerty_stagger_letters_v1"
+ ],
+ "ocr": {
+  "id": "keycls",
+  "mode": "keycls",
+  "weights": "recognizer_keycls.pt",
+  "weights_sha256": "e6f4f927eddbfc3d9c5277442b0c891efc22080348943fe47373fe0360414def"
+ },
+ "proxy": "Kaggle QWERTZ (dev bundle, not a production model)",
+ "px_per_unit": 64,
+ "split_manifest_hash": "4fd3990958a69265afeac12c9b021e1f3879761732085b1f43c54450f41b8e99",
+ "thresholds": {
+  "ambiguity_margin_u": 0.15,
+  "det_score_min": 0.1,
+  "fit_max_mean_residual_u": 0.3,
+  "fit_min_matched_fraction": 0.6,
+  "gating_u": 0.6,
+  "mismatch_min_wrong": 3,
+  "mismatch_wrong_fraction": 0.5,
+  "objective": 1.3109826313281023,
+  "ocr_score_min": 0.99,
+  "ref_invalid_max": null,
+  "skip_layout_fit": false,
+  "unmatched_cost": 0.6
+ },
+ "weights_file": "weights_yolo.pt"
+}

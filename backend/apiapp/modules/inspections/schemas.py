@@ -38,6 +38,8 @@ class Slot(BaseModel):
     col: int
     expected_label: str
     observed_label: str | None = None
+    # uncertain + ocr_low_confidence: the letter read below the threshold (a hint, not a verdict)
+    candidate_label: str | None = None
     status: Literal["correct", "incorrect", "uncertain"]
     reason: str
     reason_codes: list[str] = []

@@ -17,8 +17,10 @@ import cv2
 import numpy as np
 
 from ai.classification.keycls import CLASSES, OTHER, build_model, to_tensor_batch
+from ai.classification.thai_legend import draw_thai
 from ai.data.rectify_dataset import _rng, jitter_points
 from ai.layouts import load_layout
+from ai.pipeline.stage import code_version, fingerprint
 from ai.preprocessing import geometry as g
 
 CTX = 1.4          # stored context crop = key box × CTX, so box jitter at train time stays inside the stored pixels
@@ -120,10 +122,11 @@ def extract_crops(out_dir: Path, *, q1_dir: Path, dataset_root: Path, layout_id:
 
 
 class CropSet:
-    """Context crops -> model-input crops. Train: random box jitter / rotation / colour; eval: the exact key box."""
+    """Context crops -> model-input crops. Train: random box jitter / rotation / colour / Thai legends; eval: the exact
+    key box (with `thai_seed`, every crop gets a fixed synthetic Thai legend: the Thai-English stand-in for Val)."""
 
-    def __init__(self, path: Path, labels: np.ndarray, *, input_size: int, crop_mode: str, aug: dict | None):
-        self.path, self.labels, self.size, self.aug = str(path), labels, input_size, aug
+    def __init__(self, path: Path, labels: np.ndarray, *, input_size: int, crop_mode: str, aug: dict | None, thai_seed: int | None = None):
+        self.path, self.labels, self.size, self.aug, self.thai_seed = str(path), labels, input_size, aug, thai_seed
         self.f = crop_factor(crop_mode)
         self.X = None
 
@@ -135,6 +138,12 @@ class CropSet:
         if self.X is None:                       # opened per DataLoader worker
             self.X = np.load(self.path, mmap_mode="r")
         im = np.asarray(self.X[i])
+        lab = CLASSES[int(self.labels[i])]
+        lab = None if lab == OTHER else lab
+        if self.thai_seed is not None:
+            im = draw_thai(np.ascontiguousarray(im), lab, np.random.default_rng((self.thai_seed, i)), 1 / CTX)
+        elif self.aug and np.random.random() < self.aug.get("thai_p", 0.0):
+            im = draw_thai(np.ascontiguousarray(im), lab, np.random.default_rng(), 1 / CTX)
         S = im.shape[0]
         key = S / CTX                            # key box side in the stored crop
         side, cx, cy, ang = key * self.f, S / 2, S / 2, 0.0
@@ -227,6 +236,8 @@ def train_keycls(out_dir: Path, *, q1_dir: Path, dataset_root: str | Path, layou
     kw = dict(num_workers=cfg["workers"], pin_memory=device.type == "cuda", persistent_workers=cfg["workers"] > 0, worker_init_fn=_worker_init)
     dl_tr = torch.utils.data.DataLoader(ds_tr, batch_size=cfg["batch"], shuffle=True, drop_last=True, generator=g_, **kw)
     dl_va = torch.utils.data.DataLoader(ds_va, batch_size=cfg["batch"] * 2, shuffle=False, **kw)
+    ds_vt = CropSet(out_dir / "crops_val.npy", y_va, input_size=cfg["input"], crop_mode=crop_mode, aug=None, thai_seed=seed)
+    dl_vt = torch.utils.data.DataLoader(ds_vt, batch_size=cfg["batch"] * 2, shuffle=False, **kw)
 
     model = build_model(cfg["arch"], pretrained=cfg["pretrained"]).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
@@ -240,11 +251,19 @@ def train_keycls(out_dir: Path, *, q1_dir: Path, dataset_root: str | Path, layou
     meta = {"classes": list(CLASSES), "arch": cfg["arch"], "input": cfg["input"], "crop_mode": crop_mode, "ppu": ppu}
     state = {"epoch": 0, "best": -1.0, "bad": 0, "history": []}
     last = ck_dir / "last.pt"
+    # resume only the same run: a changed config or training code starts over instead of finishing an old run
+    run_key = fingerprint({"cfg": cfg, "crop_mode": crop_mode, "ppu": ppu, "seed": seed, "smoke": smoke, "crops": want},
+                          code_version=code_version(Path(__file__), Path(__file__).parents[1] / "classification"))
     if last.exists():
         ck = torch.load(last, map_location="cpu", weights_only=False)
-        model.load_state_dict(ck["model"]); opt.load_state_dict(ck["optimizer"]); sched.load_state_dict(ck["scheduler"]); scaler.load_state_dict(ck["scaler"])
-        state = ck["state"]
-        print(f"[q3b] resumed at epoch {state['epoch']}")
+        if ck.get("run_key") == run_key:
+            model.load_state_dict(ck["model"]); opt.load_state_dict(ck["optimizer"]); sched.load_state_dict(ck["scheduler"]); scaler.load_state_dict(ck["scaler"])
+            state = ck["state"]
+            print(f"[q3b] resumed at epoch {state['epoch']}")
+        else:
+            print("[q3b] checkpoint is from a different config/code — training from scratch")
+            for f in ("last.pt", "best.pt"):
+                (ck_dir / f).unlink(missing_ok=True)
     while state["epoch"] < epochs and state["bad"] < cfg["patience"]:
         model.train()
         tl, n, te = 0.0, 0, time.time()
@@ -258,6 +277,8 @@ def train_keycls(out_dir: Path, *, q1_dir: Path, dataset_root: str | Path, layou
             tl += loss.detach() * len(y)
             n += len(y)
         val, _, _ = evaluate(model, dl_va, device)
+        val["thai"] = {k: v for k, v in evaluate(model, dl_vt, device)[0].items() if k != "per_letter_acc"}
+        val["acc_with_thai"] = (val["acc"] + val["thai"]["acc"]) / 2
         state["epoch"] += 1
         score = val[cfg["monitor"]]
         if score > state["best"]:
@@ -268,10 +289,11 @@ def train_keycls(out_dir: Path, *, q1_dir: Path, dataset_root: str | Path, layou
         state["history"].append({"epoch": state["epoch"], "loss": float(tl) / max(n, 1), "val": {k: v for k, v in val.items() if k != "per_letter_acc"},
                                  "lr": opt.param_groups[0]["lr"], "seconds": round(time.time() - te, 1)})
         torch.save({"model": model.state_dict(), "optimizer": opt.state_dict(), "scheduler": sched.state_dict(), "scaler": scaler.state_dict(),
-                    "state": state}, last)
+                    "state": state, "run_key": run_key}, last)
         a95 = val["at_conf"]["0.95"]
         print(f"[q3b] epoch {state['epoch']}/{epochs} loss={float(tl) / max(n, 1):.4f} val_acc={val['acc']:.4f} letter_acc={val['letter_acc']:.4f} "
-              f"other_as_letter={val['other_as_letter']:.4f} cov@0.95={a95['letter_coverage']:.3f} err@0.95={a95['letter_error']:.4f} ({time.time() - te:.0f}s)")
+              f"other_as_letter={val['other_as_letter']:.4f} cov@0.95={a95['letter_coverage']:.3f} err@0.95={a95['letter_error']:.4f} "
+              f"| thai: letter_acc={val['thai']['letter_acc']:.4f} cov@0.95={val['thai']['at_conf']['0.95']['letter_coverage']:.3f} ({time.time() - te:.0f}s)")
     best = torch.load(ck_dir / "best.pt", map_location="cpu", weights_only=False)
     metrics = {**best["val"], "best_epoch": best["epoch"], "epochs_run": state["epoch"], "counts": counts, "meta": meta, "device": str(device),
                "train_seconds_this_session": round(time.time() - t0, 1), "seed": seed, "weights": str(ck_dir / "best.pt"), "history": state["history"]}

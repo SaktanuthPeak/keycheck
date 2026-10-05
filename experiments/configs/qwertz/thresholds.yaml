@@ -5,7 +5,7 @@ recognizer:
   id: keycls
   mode: keycls
   weights: outputs/pipeline/qwertz_v1/q3b_keycls/checkpoints/best.pt
-  weights_sha256: 5ff0e74163203c1b464348d1d997bb22f7fffa5232d9d39e3dc013a6aad6845b
+  weights_sha256: e6f4f927eddbfc3d9c5277442b0c891efc22080348943fe47373fe0360414def
 detectors:
   baseline:
     det_score_min: 0.25
@@ -19,7 +19,7 @@ detectors:
     mismatch_min_wrong: 2
     mismatch_wrong_fraction: 0.5
     skip_layout_fit: true
-    objective: 1.2567831537962206
+    objective: 1.2038195628645427
   yolo:
     det_score_min: 0.1
     ocr_score_min: 0.99
@@ -32,11 +32,11 @@ detectors:
     mismatch_min_wrong: 3
     mismatch_wrong_fraction: 0.5
     skip_layout_fit: false
-    objective: 1.300734670534341
+    objective: 1.3109826313281023
   frcnn:
     det_score_min: 0.25
-    ocr_score_min: 0.99
-    gating_u: 0.6
+    ocr_score_min: 0.98
+    gating_u: 0.7
     unmatched_cost: 0.6
     ambiguity_margin_u: 0.05
     fit_min_matched_fraction: 0.6
@@ -45,4 +45,4 @@ detectors:
     mismatch_min_wrong: 3
     mismatch_wrong_fraction: 0.5
     skip_layout_fit: false
-    objective: 1.2245324931546457
+    objective: 1.201387994808799

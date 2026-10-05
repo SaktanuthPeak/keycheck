@@ -9,6 +9,11 @@ import {
 	type Pt
 } from '../src/lib/features/inspection/geometry';
 import { canTransition, FLOW_STATES, transition } from '../src/lib/features/inspection/machine';
+import {
+	CANDIDATE_MIN_SCORE,
+	candidateHint,
+	percent
+} from '../src/lib/features/inspection/messages';
 
 const GOOD: Pt[] = [
 	[0.125, 0.286],
@@ -103,5 +108,31 @@ test.describe('UI state machine (Spec §10.6)', () => {
 		expect(transition('idle', 'SUBMITTED')).toBe('idle');
 		expect(canTransition('completed', 'SUBMITTED')).toBe(false);
 		expect(transition('rejected', 'RECALIBRATE')).toBe('calibrating');
+	});
+});
+
+test.describe('candidateHint (uncertain slot shown as "น่าจะเป็น X", still yellow)', () => {
+	const slot = (over: Partial<Parameters<typeof candidateHint>[0]>) => ({
+		status: 'uncertain' as const,
+		candidate_label: 'H',
+		ocr_score: 0.95,
+		...over
+	});
+
+	test('suggests the letter when the read is close to the threshold', () => {
+		expect(candidateHint(slot({}))).toBe('H');
+		expect(candidateHint(slot({ ocr_score: CANDIDATE_MIN_SCORE }))).toBe('H');
+	});
+
+	test('no hint for weak reads, missing letters or settled slots', () => {
+		expect(candidateHint(slot({ ocr_score: CANDIDATE_MIN_SCORE - 0.01 }))).toBeNull();
+		expect(candidateHint(slot({ ocr_score: null }))).toBeNull();
+		expect(candidateHint(slot({ candidate_label: null }))).toBeNull();
+		expect(candidateHint(slot({ status: 'correct' }))).toBeNull();
+	});
+
+	test('formats scores as whole percents', () => {
+		expect(percent(0.948)).toBe('95%');
+		expect(percent(null)).toBe('');
 	});
 });

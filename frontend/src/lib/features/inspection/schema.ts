@@ -89,6 +89,8 @@ export const SlotSchema = z.object({
 	col: z.number().int(),
 	expected_label: z.string(),
 	observed_label: z.string().nullable(),
+	// Letter read below the confidence threshold (uncertain + ocr_low_confidence): a hint, never a verdict.
+	candidate_label: z.string().nullable().default(null),
 	status: SlotStatusSchema,
 	// Kept as string so a new backend reason code degrades to a generic message instead of a parse error.
 	reason: z.string(),

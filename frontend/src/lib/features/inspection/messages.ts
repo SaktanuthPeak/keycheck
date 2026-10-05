@@ -1,6 +1,6 @@
 // Thai UI copy for server enums. Never call scores "accuracy" (Spec §10.5).
 import type { QuadError } from './geometry';
-import type { InspectionStatus, SlotStatus, Stage } from './schema';
+import type { InspectionStatus, Slot, SlotStatus, Stage } from './schema';
 
 export const STAGES: readonly Stage[] = ['rectifying', 'detecting', 'reading', 'matching'];
 
@@ -44,6 +44,25 @@ const REASON_TEXT: Record<string, string> = {
 
 export function reasonText(reason: string): string {
 	return REASON_TEXT[reason] ?? 'ระบบยืนยันผลช่องนี้ไม่ได้';
+}
+
+/** Below this the letter read on an uncertain slot is too weak to show even as a hint. */
+export const CANDIDATE_MIN_SCORE = 0.8;
+
+/**
+ * Letter to suggest on an uncertain slot ("น่าจะเป็น X"), or null. The slot stays uncertain (yellow) and is never
+ * counted as correct: the read was below the model's confirmation threshold.
+ */
+export function candidateHint(
+	s: Pick<Slot, 'status' | 'candidate_label' | 'ocr_score'>
+): string | null {
+	if (s.status !== 'uncertain' || !s.candidate_label) return null;
+	return (s.ocr_score ?? 0) >= CANDIDATE_MIN_SCORE ? s.candidate_label : null;
+}
+
+/** Score as a whole percent for hints, e.g. 0.948 -> "95%". */
+export function percent(score: number | null): string {
+	return score == null ? '' : `${Math.round(score * 100)}%`;
 }
 
 export type WarningInfo = { title: string; detail: string };

@@ -6,7 +6,7 @@
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import CircleQuestionMarkIcon from '@lucide/svelte/icons/circle-question-mark';
-	import { reasonText, SLOT_STATUS_TEXT } from '../messages';
+	import { candidateHint, percent, reasonText, SLOT_STATUS_TEXT } from '../messages';
 	import type { Slot, SlotStatus } from '../schema';
 
 	type Props = {
@@ -57,6 +57,7 @@
 
 {#snippet row(s: Slot)}
 	{@const selected = s.slot_id === selectedId}
+	{@const hint = candidateHint(s)}
 	<li>
 		<button
 			type="button"
@@ -81,15 +82,26 @@
 			<span class="min-w-0 flex-1">
 				<span class="flex flex-wrap items-baseline gap-x-2">
 					<span class="font-semibold">
-						ช่อง {s.expected_label}: ควรเป็น {s.expected_label} / พบ {s.observed_label ??
-							'อ่านไม่ได้'}
+						{#if hint}
+							ช่อง {s.expected_label}: ควรเป็น {s.expected_label} / น่าจะเป็น {hint}
+							<span class="font-normal">({percent(s.ocr_score)})</span>
+						{:else}
+							ช่อง {s.expected_label}: ควรเป็น {s.expected_label} / พบ {s.observed_label ??
+								'อ่านไม่ได้'}
+						{/if}
 					</span>
 					<span class="text-xs font-medium">({SLOT_STATUS_TEXT[s.status]})</span>
 					{#if s.is_reference}
 						<span class="rounded bg-sky-100 px-1.5 text-xs text-sky-800">จุดอ้างอิง</span>
 					{/if}
 				</span>
-				<span class="mt-0.5 block text-sm opacity-90">{reasonText(s.reason)}</span>
+				<span class="mt-0.5 block text-sm opacity-90" data-testid="slot-reason">
+					{#if hint}
+						ระบบเห็นเป็น {hint} แต่ยังมั่นใจไม่พอจะยืนยัน — โปรดดูปุ่มนี้ด้วยตาอีกครั้ง
+					{:else}
+						{reasonText(s.reason)}
+					{/if}
+				</span>
 				{#if s.polygon_source === 'layout'}
 					<span class="mt-0.5 block text-xs opacity-75">
 						กรอบเส้นประ = ตำแหน่งตามแบบ ไม่ได้มาจากการตรวจจับปุ่ม

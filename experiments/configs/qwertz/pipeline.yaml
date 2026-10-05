@@ -65,9 +65,9 @@ q3b:
   weight_decay: 0.0001
   label_smoothing: 0.0 # keep softmax scores spread so Q6 can tune ocr_score_min
   amp: true
-  monitor: acc
+  monitor: acc_with_thai # mean of plain Val and Val with synthetic Thai legends
   device: null # null = cuda if available
-  augment: { scale: 0.10, aspect: 0.05, shift: 0.08, rotate_deg: 4, brightness: 0.25, contrast: 0.25, gray_p: 0.1, blur_p: 0.2 }
+  augment: { scale: 0.10, aspect: 0.05, shift: 0.08, rotate_deg: 4, brightness: 0.25, contrast: 0.25, gray_p: 0.1, blur_p: 0.2, thai_p: 0.5 } # thai_p: share of train crops given synthetic Thai-English legends
 
 # ---------------- Q4: YOLO11n (Spec §5.6: no flips / mosaic / mixup) ----------------
 q4:

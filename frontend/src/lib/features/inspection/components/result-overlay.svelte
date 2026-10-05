@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { centroid, polygonArea } from '../geometry';
-	import { SLOT_STATUS_TEXT } from '../messages';
+	import { candidateHint, SLOT_STATUS_TEXT } from '../messages';
 	import type { Slot } from '../schema';
 
 	type Props = {
@@ -163,7 +163,7 @@
 						text-anchor="middle"
 						font-size={r * 1.2}
 						font-weight="700"
-						fill="white">?</text
+						fill="white">{candidateHint(slot) ?? '?'}</text
 					>
 				{:else}
 					<circle {cx} {cy} r={r * 0.75} fill={c.stroke} opacity="0.9" />

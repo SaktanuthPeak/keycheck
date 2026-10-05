@@ -81,7 +81,7 @@ result = insp.inspect(image_bgr, ref_points_px, on_stage=callback)              
   "error": null | Error.error }          // มีค่าเมื่อ rejected / failed
 
 // Slot
-{ "slot_id": "r1c0", "row": 1, "col": 0, "expected_label": "A", "observed_label": "S" | null,
+{ "slot_id": "r1c0", "row": 1, "col": 0, "expected_label": "A", "observed_label": "S" | null, "candidate_label": "S" | null,
   "status": "correct" | "incorrect" | "uncertain",
   "reason": "label_match" | "label_mismatch" | "detection_unavailable" | "mapping_ambiguous" | "ocr_low_confidence" | "ocr_invalid_label" | "crop_quality_low",
   "reason_codes": ["label_mismatch"],
@@ -93,6 +93,7 @@ result = insp.inspect(image_bgr, ref_points_px, on_stage=callback)              
 
 - `summary.correct + incorrect + uncertain == total_slots == len(slots) == 26` เสมอเมื่อ `completed`
 - ค่าที่ไม่มีเป็น `null` ไม่สร้างคะแนนขึ้นเอง (Baseline: `detector_score = null`)
+- `candidate_label` มีค่าเฉพาะช่อง `uncertain` ที่ `reason = ocr_low_confidence`: ตัวอักษรที่อ่านได้แต่ `ocr_score` ต่ำกว่าเกณฑ์ เป็นคำใบ้ให้ผู้ใช้ตรวจด้วยตา **ไม่นับเป็นผลตรวจ** (สถานะและ `summary` ไม่เปลี่ยน)
 - `warnings` ที่กำหนดไว้: `layout_fit_not_checked` (Baseline ตรวจ §7.8 ไม่ได้), `proxy_model` (Bundle ฝึกจาก Kaggle QWERTZ), `image_quality_low` (เบลอ/แสงจัด เกินเกณฑ์)
 
 ### 2.2 สถานะงาน

@@ -269,7 +269,7 @@ class Inspector:
                 codes.append("crop_quality_low")
             slots.append({
                 "slot_id": sid, "row": int(L.rows[j]), "col": int(L.cols[j]), "expected_label": L.labels[j],
-                "observed_label": s["observed_label"], "status": s["status"], "reason": reason, "reason_codes": codes,
+                "observed_label": s["observed_label"], "candidate_label": s.get("candidate_label"), "status": s["status"], "reason": reason, "reason_codes": codes,
                 "detector_score": None if self.is_baseline else _json_num(s["detector_score"]),
                 "ocr_score": _json_num(s["ocr_score"]), "assignment_distance": _json_num(s["assignment_distance"]),
                 "polygon": self._polygon(box_u, Hinv, wh), "polygon_source": "detection" if from_det else "layout",

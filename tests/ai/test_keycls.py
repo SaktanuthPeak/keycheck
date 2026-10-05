@@ -59,7 +59,7 @@ def test_eval_crop_matches_inference_crop(mode):
     n = 48
     stored = _context_crop(canvas, box, int(round(n * 1.4)))
     ds = CropSet.__new__(CropSet)
-    ds.X, ds.labels, ds.size, ds.aug, ds.f = stored[None], np.array([0]), n, None, crop_factor(mode)
+    ds.X, ds.labels, ds.size, ds.aug, ds.f, ds.thai_seed = stored[None], np.array([0]), n, None, crop_factor(mode), None
     x, _ = ds[0]
     from ai.classification.keycls import to_tensor_batch
     ref = to_tensor_batch([crop_box_px(canvas, box, mode)], n)[0]
@@ -81,3 +81,17 @@ def test_inspector_loads_classifier_from_bundle(tmp_path):
     write_bundle(root, ocr={"id": "keycls", "mode": "keycls", "weights": "../outside.pt"})
     with pytest.raises(BundleError):
         Inspector(root)
+
+
+def test_thai_legend_drawn_in_legend_colour():
+    from ai.classification.thai_legend import KEDMANEE, draw_thai, font_files
+    if not font_files():
+        pytest.skip("no Thai font installed")
+    assert set(KEDMANEE) == set(CLASSES[:-1])
+    crop = np.full((90, 90, 3), 30, np.uint8)
+    crop[20:40, 20:35] = 230                                   # a bright Latin legend on a dark key
+    out = draw_thai(crop.copy(), "A", np.random.default_rng(0), 1 / 1.4)
+    assert out.shape == crop.shape and out.dtype == np.uint8
+    changed = np.any(out != crop, axis=2)
+    assert changed.sum() > 20 and not changed[20:40, 20:35].all()
+    assert out[changed].mean() > 100                            # drawn bright, like the existing legend

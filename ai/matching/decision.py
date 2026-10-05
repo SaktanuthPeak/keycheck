@@ -68,7 +68,8 @@ def decide(ev: Evidence, layout: Layout, p: Params) -> dict:
     slots = {}
     for j, sid in enumerate(layout.slot_ids):
         s = {"slot_id": sid, "expected_label": layout.labels[j], "observed_label": None, "status": "uncertain", "reason": None,
-             "det": None, "assignment_distance": None, "detector_score": None, "ocr_score": None}
+             "det": None, "assignment_distance": None, "detector_score": None, "ocr_score": None,
+             "candidate_label": None}           # letter read below ocr_score_min: a hint for the user, never a verdict
         if j not in m:
             s["reason"] = "detection_unavailable"
         else:
@@ -82,6 +83,7 @@ def decide(ev: Evidence, layout: Layout, p: Params) -> dict:
                 s["reason"] = "ocr_invalid_label"
             elif sc < p.ocr_score_min:
                 s["reason"] = "ocr_low_confidence"
+                s["candidate_label"] = ev.letter[di]
             else:
                 s["observed_label"] = ev.letter[di]
                 s["status"] = "correct" if ev.letter[di] == layout.labels[j] else "incorrect"

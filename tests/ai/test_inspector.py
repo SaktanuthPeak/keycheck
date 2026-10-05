@@ -12,7 +12,7 @@ from PIL import Image
 from ai.inference import BundleError, Inspector, InvalidReferencePoints, load_bundle_meta
 from ai.inference.images import load_oriented_bgr
 
-SLOT_KEYS = {"slot_id", "row", "col", "expected_label", "observed_label", "status", "reason", "reason_codes", "detector_score",
+SLOT_KEYS = {"slot_id", "row", "col", "expected_label", "observed_label", "candidate_label", "status", "reason", "reason_codes", "detector_score",
              "ocr_score", "assignment_distance", "polygon", "polygon_source", "is_reference"}
 TOP_KEYS = {"status", "error_code", "layout_id", "layout_version", "model_bundle_id", "coordinate_system", "summary", "slots",
             "suggestions", "warnings", "timings_ms", "fit"}
