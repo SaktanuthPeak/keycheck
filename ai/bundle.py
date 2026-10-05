@@ -19,7 +19,7 @@ def dir_hash(root: Path) -> str:
 
 
 def build_bundle(out_dir: Path, *, bundle_id: str, detector: str, weights: Path | None, imgsz_or_model_cfg: dict | None, chosen: dict,
-                 thresholds: dict, layouts: list[str], split_manifest_hash: str, commit: str) -> dict:
+                 thresholds: dict, layouts: list[str], split_manifest_hash: str, commit: str, extra_files: dict[str, Path] | None = None) -> dict:
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True)
@@ -27,6 +27,8 @@ def build_bundle(out_dir: Path, *, bundle_id: str, detector: str, weights: Path 
     if weights is not None and Path(weights).exists():
         wname = f"weights_{detector}{Path(weights).suffix}"
         shutil.copy(weights, out_dir / wname)
+    for name, src in (extra_files or {}).items():       # e.g. the Q3b keycap classifier named by chosen["recognizer"]["weights"]
+        shutil.copy(src, out_dir / name)
     meta = {"bundle_id": bundle_id, "detector": detector, "weights_file": wname, "detector_config": imgsz_or_model_cfg, "px_per_unit": chosen["px_per_unit"],
             "crop_mode": chosen["crop_mode"], "ocr": chosen["recognizer"], "thresholds": thresholds, "layouts": layouts,
             "split_manifest_hash": split_manifest_hash, "commit": commit, "proxy": "Kaggle QWERTZ (dev bundle, not a production model)"}

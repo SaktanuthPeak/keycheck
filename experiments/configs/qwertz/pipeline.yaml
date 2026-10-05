@@ -138,6 +138,7 @@ q5:
 # ---------------- Q6: pipeline eval / tuning (Validation only) ----------------
 q6:
   detectors: [baseline, yolo, frcnn]
+  recognizer: keycls # keycls = Q3b classifier | q3 = PP-OCR config chosen in Q3
   max_items_per_scenario: null # null = all; smoke uses a few
   evidence_gating_u: 0.75 # OCR only on detections within this distance of a slot centre
   evidence_det_floor: 0.05
@@ -160,7 +161,7 @@ q6:
     min_layout_mismatch: 0.80 # S4a floor, so tuning cannot switch the layout check off
     grid:
       det_score_min: [0.10, 0.25, 0.40, 0.55]
-      ocr_score_min: [0.30, 0.50, 0.70, 0.85, 0.90, 0.95]
+      ocr_score_min: [0.30, 0.50, 0.70, 0.85, 0.90, 0.95, 0.98, 0.99]
       gating_u: [0.40, 0.50, 0.60, 0.70]
       unmatched_cost: [0.50, 0.60, 0.80]
       ambiguity_margin_u: [0.05, 0.10, 0.15]

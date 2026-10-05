@@ -129,10 +129,17 @@ def q6(ctx: Context):
     q4d, q5d = _maybe_dir(ctx, "q4", "q4_yolo"), _maybe_dir(ctx, "q5", "q5_frcnn")
     ups = [_res(ctx, "q2"), _res(ctx, "q3")] + [x for x in (_res(ctx, "q4"), _res(ctx, "q5")) if x]
     ups += [f"q4:{(q4d / '_DONE.json').read_text()}" if q4d else "q4:none", f"q5:{(q5d / '_DONE.json').read_text()}" if q5d else "q5:none"]
+    q3bd = None
+    if ctx.cfg["q6"].get("recognizer", "q3") == "keycls":
+        q3bd = _maybe_dir(ctx, "q3b", "q3b_keycls")
+        if q3bd is None:
+            raise StageError("Q6 recognizer is 'keycls' but Q3b has no result — run S.q3b(ctx) first")
+        ups.append(f"q3b:{(q3bd / '_DONE.json').read_text()}")
     r = run_stage("q6_eval", lambda out: run_q6(out, q1_dir=_res(ctx, "q1").out_dir, q2_dir=_res(ctx, "q2").out_dir, q3_dir=_res(ctx, "q3").out_dir,
-                                              q4_dir=q4d, q5_dir=q5d, cfg=ctx.cfg, repo_dir=REPO, smoke=ctx.smoke, manifest_dir=ctx.manifest_dir),
+                                              q4_dir=q4d, q5_dir=q5d, q3b_dir=q3bd, cfg=ctx.cfg, repo_dir=REPO, smoke=ctx.smoke, manifest_dir=ctx.manifest_dir),
                   root=ctx.root, config={"q6": ctx.cfg["q6"], "smoke": ctx.smoke}, upstream=ups,
-                  code_version=code_version(AI / "evaluation", AI / "matching", AI / "bundle.py", AI / "pipeline" / "evidence.py", AI / "detection"),
+                  code_version=code_version(AI / "evaluation", AI / "matching", AI / "bundle.py", AI / "pipeline" / "evidence.py", AI / "detection",
+                                            AI / "classification"),
                   force=ctx.force, enabled=ctx.run["q6"])
     ctx.results["q6"] = r
     return r

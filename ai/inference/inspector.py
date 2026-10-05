@@ -134,8 +134,12 @@ class Inspector:
 
         if reader is None:
             ocr = dict(self.meta["ocr"])
-            names = {f.name for f in fields(OcrSpec)}
-            reader = PaddleReader(OcrSpec(**{**{k: v for k, v in ocr.items() if k in names}, "device": ocr_device}))
+            if ocr.get("mode") == "keycls":           # Q3b keycap classifier shipped inside the bundle
+                from ai.classification.keycls import KeyClassifier
+                reader = KeyClassifier(_weights_path(self.bundle_dir, str(ocr["weights"])), device=ocr_device)
+            else:
+                names = {f.name for f in fields(OcrSpec)}
+                reader = PaddleReader(OcrSpec(**{**{k: v for k, v in ocr.items() if k in names}, "device": ocr_device}))
         self.reader = reader
         self.weights_path = None if self.is_baseline else _weights_path(self.bundle_dir, str(self.meta["weights_file"]))
         self.detector = detector if detector is not None or self.is_baseline else self._load_detector(self.weights_path, detector_device)
