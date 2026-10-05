@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Inference worker process (MongoDB mode, W6). OCR on CPU; GPU hidden unless CUDA_VISIBLE_DEVICES is set explicitly.
+cd "$(dirname "$0")/.." || exit 1
+LOGGING_LEVEL="${LOGGING_LEVEL:-20}" CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES-}" \
+  exec uv run python -m apiapp.worker

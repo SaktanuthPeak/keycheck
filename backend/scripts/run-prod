@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+cd "$(dirname "$0")/.." || exit 1
+LOGGING_LEVEL=20 APP_ENV=prod exec uv run fastapi run apiapp/main.py --host 0.0.0.0 --port 9010

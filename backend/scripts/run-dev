@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# API on http://localhost:9010 (port 9000 belongs to another project). Memory mode also runs the worker thread.
+cd "$(dirname "$0")/.." || exit 1
+LOGGING_LEVEL=10 APP_ENV=dev CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES-}" \
+  exec uv run fastapi dev apiapp/main.py --host 0.0.0.0 --port 9010
