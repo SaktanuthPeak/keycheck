@@ -1,0 +1,37 @@
+{
+ "bundle_id": "baseline_dev_v0",
+ "commit": null,
+ "crop_mode": "key_center_0.7",
+ "detector": "baseline",
+ "detector_config": null,
+ "evidence": {
+  "det_floor": 0.05
+ },
+ "layouts": [
+  "qwerty_stagger_letters_v1",
+  "qwertz_letters_eval_v1"
+ ],
+ "notes": "Hand-written dev bundle (web plan W0.5). ppu 64 + OCR auto_server come from Q3 (outputs/pipeline/qwertz_v1/q3_ocr/summary.json). crop_mode deviates from Q3 'chosen' (key_full): no Q3 row met max_reject_rate 0.10, so run_q3 kept its first stage-2 row instead of the best one; on the same sweep key_center_0.7 scores 0.815 vs 0.613 for key_full at ppu 64 (key_center_0.55: 0.819). key_center_0.7 is preferred over 0.55 because it keeps more of the keycap face, where Thai-English keycaps put the Latin legend near a corner. W1 smoke on 2 Kaggle val images (GT points): correct 23/26 and 14/26 vs 20/26 and 6/26 with key_full. CPU latency is the same for both crops and for rec-only vs auto (~4.4-5.9 s warm for 26 crops while a training job loads the CPU), so auto_server is kept. thresholds = pipeline.yaml q6.default_params with skip_layout_fit true (baseline cannot run the layout fit check).",
+ "ocr": {
+  "det_model": "PP-OCRv5_server_det",
+  "id": "auto_server",
+  "mode": "auto",
+  "pad_px": 8,
+  "rec_model": "PP-OCRv5_server_rec"
+ },
+ "proxy": "Kaggle QWERTZ (OCR/crop settings chosen on Kaggle validation; dev bundle, not a production model)",
+ "px_per_unit": 64,
+ "split_manifest_hash": null,
+ "thresholds": {
+  "ambiguity_margin_u": 0.1,
+  "det_score_min": 0.25,
+  "fit_max_mean_residual_u": null,
+  "fit_min_matched_fraction": null,
+  "gating_u": 0.5,
+  "ocr_score_min": 0.5,
+  "ref_invalid_max": 2,
+  "skip_layout_fit": true,
+  "unmatched_cost": 0.6
+ },
+ "weights_file": null
+}
