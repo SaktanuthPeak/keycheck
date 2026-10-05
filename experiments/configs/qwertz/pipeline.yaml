@@ -49,6 +49,26 @@ q3:
         pad_px: 8,
       }
 
+# ---------------- Q3b: keycap classifier A–Z + OTHER (replaces general OCR, see Q6 recognizer) ----------------
+q3b:
+  arch: resnet18
+  pretrained: true
+  input: 64 # crop side fed to the model; keys are ~55 px at px_per_unit 64
+  other_per_image: 10 # non-letter keycaps sampled per image as OTHER
+  jitter_sigmas_u: [0.05, 0.10] # train canvases use GT or one of these tap-noise levels (as Q2)
+  min_visible: 0.5
+  epochs: 20
+  patience: 5
+  batch: 256
+  workers: 6
+  lr: 0.001
+  weight_decay: 0.0001
+  label_smoothing: 0.0 # keep softmax scores spread so Q6 can tune ocr_score_min
+  amp: true
+  monitor: acc
+  device: null # null = cuda if available
+  augment: { scale: 0.10, aspect: 0.05, shift: 0.08, rotate_deg: 4, brightness: 0.25, contrast: 0.25, gray_p: 0.1, blur_p: 0.2 }
+
 # ---------------- Q4: YOLO11n (Spec §5.6: no flips / mosaic / mixup) ----------------
 q4:
   model: { weights: yolo11n.pt }

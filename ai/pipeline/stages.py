@@ -81,6 +81,19 @@ def chosen_ppu(ctx: Context) -> int:
     return yaml.safe_load((_res(ctx, "q3").out_dir / "chosen_config.yaml").read_text())["px_per_unit"]
 
 
+def q3b(ctx: Context):
+    from ai.training.train_keycls import train_keycls
+    chosen = yaml.safe_load((_res(ctx, "q3").out_dir / "chosen_config.yaml").read_text())
+    ppu, crop = chosen["px_per_unit"], chosen["crop_mode"]
+    r = run_stage("q3b_keycls", lambda out: train_keycls(out, q1_dir=_res(ctx, "q1").out_dir, dataset_root=ctx.dataset_root, layout_id=ctx.cfg["layout_id"],
+                                                        ppu=ppu, crop_mode=crop, cfg=ctx.cfg["q3b"], seed=ctx.seed, smoke=ctx.smoke),
+                  root=ctx.root, config={"q3b": ctx.cfg["q3b"], "ppu": ppu, "crop_mode": crop, "seed": ctx.seed, "smoke": ctx.smoke},
+                  upstream=[_res(ctx, "q1"), _res(ctx, "q3")], code_version=code_version(AI / "training" / "train_keycls.py", AI / "classification"),
+                  force=ctx.force, enabled=ctx.run.get("q3b", True))
+    ctx.results["q3b"] = r
+    return r
+
+
 def q4(ctx: Context):
     from ai.training.train_yolo import train_yolo
     ppu = chosen_ppu(ctx)

@@ -92,6 +92,18 @@ def show_train(res):
         plt.plot([x["epoch"] for x in h], [x["val"]["map50_95"] for x in h], label="val mAP50-95"); plt.legend(); plt.show()
 
 
+def show_keycls(res):
+    m = res.summary
+    _df([{k: v for k, v in m.items() if not isinstance(v, (list, dict))}])
+    _df([{"conf ≥": t, **v} for t, v in m["at_conf"].items()])
+    _df([{"letter": k, "acc": v} for k, v in sorted(m["per_letter_acc"].items(), key=lambda kv: kv[1])[:8]])
+    import matplotlib.pyplot as plt
+    h = m["history"]
+    plt.figure(figsize=(9, 3))
+    plt.plot([x["epoch"] for x in h], [x["loss"] for x in h], label="train loss")
+    plt.plot([x["epoch"] for x in h], [x["val"]["acc"] for x in h], label="val acc"); plt.legend(); plt.show()
+
+
 def show_q6(res):
     _md(f"Detector ที่เลือก: **{res.summary['selected']}**")
     _df([{"detector": k, **v} for k, v in res.summary["summaries"].items()])
