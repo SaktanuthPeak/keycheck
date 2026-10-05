@@ -23,6 +23,11 @@ class Layout:
     margin_u: float
     fit: dict
     internal_only: bool
+    version: int = 1
+    name: str = ""
+    rows: tuple[int, ...] = ()           # per slot, same order as slot_ids
+    cols: tuple[int, ...] = ()
+    supported_form_factors: tuple[str, ...] = ()
 
     def index(self, slot_id: str) -> int:
         return self.slot_ids.index(slot_id)
@@ -53,4 +58,9 @@ def load_layout(layout_id_or_path: str | Path) -> Layout:
         margin_u=float(d["margin_u"]),
         fit=dict(d["fit_thresholds"]),
         internal_only=bool(d.get("internal_only", False)),
+        version=int(d.get("version", 1)),
+        name=str(d.get("name", "")),
+        rows=tuple(int(s["row"]) for s in slots),
+        cols=tuple(int(s["col"]) for s in slots),
+        supported_form_factors=tuple(d.get("supported_form_factors", ())),
     )
