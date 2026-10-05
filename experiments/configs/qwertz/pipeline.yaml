@@ -140,7 +140,7 @@ q6:
     min_layout_mismatch: 0.80 # S4a floor, so tuning cannot switch the layout check off
     grid:
       det_score_min: [0.10, 0.25, 0.40, 0.55]
-      ocr_score_min: [0.30, 0.50, 0.70, 0.85]
+      ocr_score_min: [0.30, 0.50, 0.70, 0.85, 0.90, 0.95]
       gating_u: [0.40, 0.50, 0.60, 0.70]
       unmatched_cost: [0.50, 0.60, 0.80]
       ambiguity_margin_u: [0.05, 0.10, 0.15]
