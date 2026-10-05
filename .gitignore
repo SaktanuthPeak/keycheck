@@ -45,3 +45,6 @@ outputs/
 
 # Pipeline outputs (plan §4.2)
 outputs/
+
+# Python packaging metadata
+*.egg-info/
