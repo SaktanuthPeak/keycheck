@@ -1,6 +1,7 @@
 """Stages Q6 (Validation eval + tuning + dev bundle) and Q7 (locked Proxy Test) — plan §5."""
 from __future__ import annotations
 
+import inspect
 import json
 import shutil
 import subprocess
@@ -13,12 +14,15 @@ from ai.colab.bootstrap import free_memory
 from ai.detection.detectors import FrcnnDetector, YoloDetector
 from ai.evaluation import pipeline_eval as PE
 from ai.layouts import load_layout
-from ai.matching.decision import Params
-from ai.pipeline.stage import file_sha256
+from ai.matching.decision import Evidence, Params
+from ai.pipeline.stage import code_version, file_sha256, fingerprint, read_done
 from ai.recognition.ocr import OcrSpec, PaddleReader
 
 ALL_LAYOUTS = ("qwertz_letters_eval_v1", "qwerty_stagger_letters_v1")
 PROXY_HEADER = "> **Proxy: Kaggle QWERTZ, ภาพสินค้า/เว็บ — ไม่ใช่ผล Test หลัก** (ข้อจำกัด: plan §7)\n"
+AI = Path(__file__).resolve().parents[1]
+# Code that shapes the evidence itself; tuning/objective/report code is deliberately left out so re-tuning reuses the cache.
+EVIDENCE_CODE = (AI / "pipeline" / "evidence.py", AI / "recognition", AI / "detection")
 
 
 def _git_head(repo: Path) -> str:
@@ -47,6 +51,16 @@ def make_detect(name: str, *, ppu: int, layouts: dict, q4_dir: Path | None, q5_d
     raise ValueError(name)
 
 
+def evidence_key(name: str, *, weights: Path | None, det_cfg, chosen: dict, q2_dir: Path, scen: dict, ppu: int, q6: dict) -> str:
+    """Everything the Validation evidence depends on. A cached pkl is reused only when this matches."""
+    q2_done = read_done(Path(q2_dir)) or {}
+    return fingerprint({
+        "detector": name, "weights_sha256": file_sha256(weights) if weights else None, "det_cfg": det_cfg,
+        "recognizer": chosen["recognizer"], "crop_mode": chosen["crop_mode"], "ppu": ppu, "q2": q2_done.get("fingerprint"),
+        "canvases": PE.unique_canvases(scen), "gating_u": q6["evidence_gating_u"], "det_floor": q6["evidence_det_floor"],
+    }, code_version=code_version(*EVIDENCE_CODE) + fingerprint([inspect.getsource(PE.build_evidence), inspect.getsource(Evidence)]))
+
+
 def _setup(chosen_yaml: Path, cfg: dict):
     chosen = yaml.safe_load(Path(chosen_yaml).read_text())
     layouts = {i: load_layout(i) for i in ALL_LAYOUTS}
@@ -71,10 +85,18 @@ def run_q6(out_dir: Path, *, q1_dir: Path, q2_dir: Path, q3_dir: Path, q4_dir: P
             continue
         detect, w, dc, _ = made
         weights[name], dcfg[name] = w, dc
-        print(f"[q6] evidence: {name}")
-        cache = PE.build_evidence(Path(q2_dir), "val", scen, ppu, detect, reader, layouts["qwertz_letters_eval_v1"], chosen["crop_mode"],
-                                  q6["evidence_gating_u"], q6["evidence_det_floor"])
-        PE.save_cache(out_dir / f"evidence_val_{name}.pkl", cache)
+        cache_p, key_p = out_dir / f"evidence_val_{name}.pkl", out_dir / f"evidence_val_{name}.key"
+        key = evidence_key(name, weights=w, det_cfg=dc, chosen=chosen, q2_dir=q2_dir, scen=scen, ppu=ppu, q6=q6)
+        if cache_p.exists() and key_p.exists() and key_p.read_text().strip() == key:
+            print(f"[q6] evidence: {name} — reusing cache ({key[:8]})")
+            cache = PE.load_cache(cache_p)
+        else:
+            print(f"[q6] evidence: {name}")
+            key_p.unlink(missing_ok=True)
+            cache = PE.build_evidence(Path(q2_dir), "val", scen, ppu, detect, reader, layouts["qwertz_letters_eval_v1"], chosen["crop_mode"],
+                                      q6["evidence_gating_u"], q6["evidence_det_floor"])
+            PE.save_cache(cache_p, cache)
+            key_p.write_text(key)  # written last: a crash mid-save leaves no key, so the pkl is rebuilt
         is_base = name == "baseline"
         base = dict(q6["default_params"])
         rep0, _ = PE.evaluate(scen, cache, layouts, PE.make_params(base, None, is_base))
