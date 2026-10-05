@@ -1,0 +1,50 @@
+# keycheck-ai: shared AI code for the inference worker and the training/evaluation notebooks (implementation plan 0.D).
+# This directory IS the `ai` package, so setuptools maps the package name onto ".".
+# Versions match the set verified together in requirements-colab.txt / .venv-ml (Python 3.12).
+[project]
+name = "keycheck-ai"
+version = "0.1.0"
+description = "KeyCheck AI pipeline: rectification, detection, OCR, matching, evaluation"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "numpy>=1.26,<2.4",
+    "scipy>=1.11",
+    "pyyaml>=6.0",
+    "pillow>=10.0",
+    "opencv-contrib-python>=4.10,<4.11",
+]
+
+[project.optional-dependencies]
+ocr = [
+    "paddlepaddle>=3.0,<3.4",
+    "paddleocr>=3.0,<3.8",
+]
+detector = [
+    "torch>=2.3",
+    "torchvision>=0.18",
+    "ultralytics>=8.3,<8.5",
+]
+test = [
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "ai" = "." }
+packages = [
+    "ai",
+    "ai.colab",
+    "ai.data",
+    "ai.data.keyboard_dataset",
+    "ai.detection",
+    "ai.evaluation",
+    "ai.inference",
+    "ai.matching",
+    "ai.pipeline",
+    "ai.preprocessing",
+    "ai.recognition",
+    "ai.training",
+]
