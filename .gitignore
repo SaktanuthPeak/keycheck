@@ -51,3 +51,7 @@ outputs/
 
 # Backend runtime storage (uploads)
 var/
+
+# Deployable bundle weights (tracked so other machines can run tests)
+!bundles/keycheck_qwertz_dev_v1/
+!bundles/keycheck_qwertz_dev_v1/*.pt
