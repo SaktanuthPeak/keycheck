@@ -52,8 +52,10 @@ Bundle ที่เขียนด้วยมือ (Web plan W0 ข้อ 5) �
 | asus28 | baseline_dev_v0 | 23 / 0 / 3 | 4.6–5.1 s | 4.6–5.1 s | 1.3 GB |
 | corsair14 (ฟอนต์เกมมิ่ง ไฟ RGB) | baseline_dev_v0 | 14 / 0 / 12 | 5.4–5.6 s | 5.4–5.6 s | 1.3 GB |
 | asus28 | smoke `keycheck_qwertz_dev_v1` (frcnn) | 14 / 0 / 12 | 5.2–5.4 s | 7.2–7.4 s (detect ~2 s) | 1.8 GB |
+| asus28 | `keycheck_qwertz_dev_v1` (yolo + ResNet18 `keycls`, ปัจจุบัน) | **26 / 0 / 0** | ~0.02 s | **0.038 s** | 0.7 GB |
+| corsair14 (ฟอนต์เกมมิ่ง ไฟ RGB) | `keycheck_qwertz_dev_v1` (yolo + ResNet18 `keycls`, ปัจจุบัน) | **26 / 0 / 0** | ~0.02 s | **0.040 s** | 0.7 GB |
 
-ครั้งแรกหลังเริ่ม Process ช้ากว่านี้ราว 4–5 วินาที เพราะ Paddle โหลดโมเดลตอนอ่าน Crop ชุดแรก ตัวเลขเหล่านี้เป็นของ Proxy ไม่ใช่ความแม่นยำของเว็บ
+ครั้งแรกหลังเริ่ม Process ช้ากว่านี้ราว 4–5 วินาที เพราะ Paddle โหลดโมเดลตอนอ่าน Crop ชุดแรก (Bundle ปัจจุบันไม่ใช้ Paddle: โหลดครั้งแรก 1.7 s แถวปัจจุบันวัดบน i7-13700HX ขณะเครื่องว่าง; ผลเต็มอยู่ใน [`docs/model-card-keycheck_qwertz_dev_v1.md`](../docs/model-card-keycheck_qwertz_dev_v1.md)) ตัวเลขเหล่านี้เป็นของ Proxy ไม่ใช่ความแม่นยำของเว็บ
 
 ## ติดตั้ง Dev bundle จาก Notebook Q6 (W4)
 
